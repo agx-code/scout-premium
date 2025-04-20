@@ -1,0 +1,172 @@
+/* Reset básico */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f4f7f9;
+    padding: 20px;
+    color: #1f2937;
+  }
+  
+  /* Título principal */
+  header h1 {
+    text-align: center;
+    color: #3b82f6;
+    font-size: 2rem;
+    margin-bottom: 30px;
+  }
+  
+  /* Container dos jogos */
+  #jogos-container {
+    max-width: 800px;
+    margin: auto;
+  }
+  
+  /* Card do jogo */
+  .jogo {
+    background: #ffffff;
+    padding: 20px;
+    margin: 15px auto;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Título e horário */
+  .jogo h3 {
+    margin: 0 0 6px;
+    font-size: 1.25rem;
+    color: #111827;
+  }
+  
+  .jogo p {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+    color: #6b7280;
+  }
+  
+  /* Botões principais */
+  button {
+    margin-top: 10px;
+    padding: 10px 16px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    font-weight: 600;
+    border-radius: 8px;
+    font-size: 15px;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  button:hover {
+    background: #2563eb;
+    transform: scale(1.03);
+  }
+  
+  #jogos-container button {
+    margin-right: 8px;
+    margin-bottom: 10px;
+  }
+  
+  /* Seções de IA e estatísticas */
+  .analise-ia,
+  .estatistica-time {
+    background: #eff6ff;
+    padding: 15px;
+    border-left: 4px solid #3b82f6;
+    border-radius: 10px;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  
+  /* Título da estatística */
+  .estatistica-time h4 {
+    margin-top: 0;
+    text-align: center;
+    color: #1d4ed8;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  
+  /* Grid das estatísticas */
+  .estat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 15px;
+  }
+  
+  /* Item de estatística */
+  .estat-item {
+    background: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+  }
+  
+  .estat-item .label {
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .estat-item .value {
+    font-weight: 700;
+    color: #3b82f6;
+  }
+  
+  /* Paginação */
+  #paginacao {
+    text-align: center;
+    margin-top: 30px;
+  }
+  
+  #paginacao button {
+    margin: 0 4px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #e0f2fe;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1e3a8a;
+  }
+  
+  #paginacao button.ativo {
+    background: #3b82f6;
+    color: white;
+    font-weight: bold;
+    border: none;
+  }
+
+  button {
+    background-color: #2563eb !important;
+    color: #fff !important;
+    padding: 10px 14px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 0.9rem !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05) !important;
+    transition: background 0.3s, transform 0.2s !important;
+  }
+  
+  button i {
+    color: white !important;
+  }
+  
+  

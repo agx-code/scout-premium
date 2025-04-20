@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scout Premium - Jogos do Dia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      color: #1f2937;
+      margin: 0;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: #2563eb;
+    }
+
+    .jogo {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      margin-bottom: 20px;
+      max-width: 800px;
+      margin-inline: auto;
+    }
+
+    .jogo h3 {
+      margin: 0 0 5px;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .jogo p {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
+      color: #6b7280;
+    }
+
+    .botoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .botoes button {
+      background-color: #2563eb;
+      color: #fff;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .botoes button i {
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .botoes button:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-2px);
+    }
+
+    .analise-ia {
+      background: #e8f0fe;
+      padding: 15px;
+      border-left: 4px solid #2563eb;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .analise-ia strong {
+      color: #1e3a8a;
+    }
+
+    #paginacao {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    #paginacao button {
+      background: #e0f2fe;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin: 0 3px;
+      font-size: 0.9rem;
+      color: #2563eb;
+      font-weight: 500;
+      transition: 0.2s;
+    }
+
+    #paginacao button.ativo {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+    }
+
+    #paginacao button:hover {
+      background: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fas fa-bolt"></i> Scout </h1>
+  </header>
+
+  <div id="jogos-container">
+    <div class="jogo">
+      <h3>Time A x Time B</h3>
+      <p>Horário: 18:00</p>
+      <div class="botoes">
+        <button><i class="fas fa-chart-line"></i> Estatísticas</button>
+        <button><i class="fas fa-brain"></i> Análise IA</button>
+        <button><i class="fas fa-lightbulb"></i> Palpite IA</button>
+        <button><i class="fas fa-chart-bar"></i> ProbMap</button>
+        <button><i class="fas fa-eye"></i> Tendência Oculta</button>
+        <button><i class="fas fa-user-secret"></i> Entrada Pro</button>
+        <button><i class="fas fa-fire"></i> Detecção de Valor</button>
+      </div>
+      <div class="analise-ia">
+        <strong>Exemplo:</strong> Este será o conteúdo da análise ou IA.
+      </div>
+    </div>
+  </div>
+
+  <div id="paginacao">
+    <button class="ativo">1</button>
+    <button>2</button>
+    <button>3</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

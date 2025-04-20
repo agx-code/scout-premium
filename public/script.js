@@ -1,0 +1,542 @@
+// ✅ Arquivo script.js COMPLETO E CORRIGIDO
+
+// Variáveis principais
+const apiHost = 'https://v3.football.api-sports.io';
+const sportMonksHost = 'https://api.sportmonks.com/v3/football';
+const apiKey = 'SUA_CHAVE_API_FOOTBALL';
+const cacheOdds = {};
+let jogosTotais = [];
+let paginaAtual = 1;
+const jogosPorPagina = 10;
+
+function getDataHojeBrasil() {
+  const agora = new Date();
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo'
+  }).format(agora.setHours(agora.getHours() - 2)).split('/').reverse().join('-');
+}
+
+const hoje = new Date();
+const amanha = new Date(hoje);
+amanha.setDate(hoje.getDate() + 1);
+const datasBusca = [hoje, amanha].map(data => data.toISOString().split('T')[0]);
+
+async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) {
+  const estatContainer = document.getElementById(`estatisticas-${id}`);
+  if (estatContainer.innerHTML.trim() !== '') {
+    estatContainer.innerHTML = '';
+    return;
+  }
+  estatContainer.innerHTML = '📊 Carregando estatísticas...';
+
+  try {
+    const [homeRes, awayRes] = await Promise.all([
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+    ]);
+
+    const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
+    const time1 = homeStats.response;
+    const time2 = awayStats.response;
+
+    const mediaGols1 = parseFloat(time1.goals.for.average.total || 0);
+    const mediaGols2 = parseFloat(time2.goals.for.average.total || 0);
+    const mediaSofridos1 = parseFloat(time1.goals.against.average.total || 0);
+    const mediaSofridos2 = parseFloat(time2.goals.against.average.total || 0);
+    const mediaTotal = (mediaGols1 + mediaGols2 + mediaSofridos1 + mediaSofridos2) / 2;
+
+    const mediaHT1 = parseFloat(time1.goals.for.average.first || 0) + parseFloat(time1.goals.against.average.first || 0);
+    const mediaHT2 = parseFloat(time2.goals.for.average.first || 0) + parseFloat(time2.goals.against.average.first || 0);
+    const mediaTotalHT = (mediaHT1 + mediaHT2) / 2;
+
+    const amarelos1 = parseFloat(time1.cards?.yellow?.average || 0);
+    const vermelhos1 = parseFloat(time1.cards?.red?.average || 0);
+    const amarelos2 = parseFloat(time2.cards?.yellow?.average || 0);
+    const vermelhos2 = parseFloat(time2.cards?.red?.average || 0);
+
+    const probOver1_5 = Math.min(95, Math.round((1 - Math.exp(-mediaTotal / 1.4)) * 100));
+    const probOver2_5 = Math.min(95, Math.round((1 - Math.exp(-mediaTotal / 2.2)) * 100));
+    const probUnder2_5 = 100 - probOver2_5;
+
+    estatContainer.innerHTML = `
+      <p><strong>📊 ${matchName}</strong></p>
+      <ul style="padding-left: 16px; line-height: 1.6; list-style-type: none;">
+        <li>⚽ Gols Médios (FT): <strong>${mediaTotal.toFixed(2)}</strong></li>
+        <li>⏱️ Gols 1ºT: <strong>${mediaTotalHT.toFixed(2)}</strong></li>
+        <li>📈 Over 1.5: <strong>${probOver1_5}%</strong></li>
+        <li>📊 Over 2.5: <strong>${probOver2_5}%</strong></li>
+        <li>🛡️ Under 2.5: <strong>${probUnder2_5}%</strong></li>
+        <li>🟨 ${time1.team.name} Amarelos: <strong>${amarelos1.toFixed(2)}</strong></li>
+        <li>🔴 ${time1.team.name} Vermelhos: <strong>${vermelhos1.toFixed(2)}</strong></li>
+        <li>🟨 ${time2.team.name} Amarelos: <strong>${amarelos2.toFixed(2)}</strong></li>
+        <li>🔴 ${time2.team.name} Vermelhos: <strong>${vermelhos2.toFixed(2)}</strong></li>
+      </ul>
+    `;
+  } catch (error) {
+    console.error('❌ Erro ao buscar estatísticas:', error);
+    estatContainer.innerHTML = '❌ Erro ao carregar estatísticas.';
+  }
+}
+
+
+async function analisarComIA(time1, time2, campeonato, dataFormatada, id, homeId, awayId, leagueId, season) {
+  const container = document.getElementById(`analise-${id}`);
+  if (!container) return;
+
+  if (container.innerHTML.trim() !== '') {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '🧠 Gerando análise estratégica com IA...';
+
+  try {
+    // 🔎 Requisições simultâneas às estatísticas dos dois times
+    const [homeRes, awayRes] = await Promise.all([
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+    ]);
+
+    const [homeData, awayData] = await Promise.all([homeRes.json(), awayRes.json()]);
+
+    const h = homeData.response;
+    const a = awayData.response;
+
+    if (!h || !a) {
+      container.innerHTML = '❌ Não foi possível obter dados estatísticos.';
+      return;
+    }
+
+    // 📊 Prompt técnico e estratégico
+    const prompt = `
+Analise o jogo entre ${time1} x ${time2}, marcado para o dia ${dataFormatada} pela competição ${campeonato}. 
+Você é um profissional da casa de apostas, focado em inteligência de mercado, comportamento de público e ajustes de linha.
+
+📊 Estatísticas disponíveis:
+- ${time1}: média de gols marcados: ${h.goals.for.average.total}, sofridos: ${h.goals.against.average.total}
+- ${time2}: média de gols marcados: ${a.goals.for.average.total}, sofridos: ${a.goals.against.average.total}
+
+Use esta estrutura na resposta:
+
+1️⃣ Introdução 📌  
+2️⃣ O Jogo e a Percepção Pública 🔍  
+3️⃣ Estratégias da Casa 🏦  
+4️⃣ Estatísticas Reais Consideradas pela Casa 📈  
+5️⃣ Onde Está o Valor Real? 💰  
+6️⃣ Conclusão Estratégica 🧠
+
+🔒 Seja direto, racional, sem floreios. Escreva como um oddsmaker experiente de uma casa de apostas internacional.
+    `;
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    const data = await response.json();
+
+    const texto = data?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+    container.innerHTML = `<p style="margin-top: 10px;">${texto.replace(/\n/g, '<br>')}</p>`;
+  } catch (error) {
+    console.error('❌ Erro ao gerar análise com IA:', error);
+    container.innerHTML = '<p style="color: red;">❌ Erro ao gerar análise com a IA.</p>';
+  }
+}
+
+
+
+async function gerarPalpiteIA(time1, time2, id, homeId, awayId, leagueId, season) {
+  const container = document.getElementById(`palpite-${id}`);
+  if (container.innerHTML.trim() !== '') {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '🎯 Gerando palpite técnico com IA...';
+
+  try {
+    const [homeRes, awayRes] = await Promise.all([
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+    ]);
+
+    const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
+    const h = homeStats.response;
+    const a = awayStats.response;
+
+    const prompt = `
+Você é um analista de risco em apostas esportivas. Com base nas estatísticas abaixo, recomende o melhor mercado com valor estatístico:
+
+📊 Estatísticas:
+- ${time1}: Gols marcados: ${h.goals.for.average.total}, sofridos: ${h.goals.against.average.total}
+- ${time2}: Gols marcados: ${a.goals.for.average.total}, sofridos: ${a.goals.against.average.total}
+
+🎯 Escolha o melhor entre: Over 1.5, Over 2.5, BTTS, Under 2.5, Dupla Chance, HT Over 0.5, HT Under 0.5
+✅ Responda com até 3 linhas. Seja técnico, direto e lógico.`;
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    const data = await res.json();
+    const texto = data?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+    container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
+  } catch (err) {
+    console.error('❌ Erro ao gerar palpite IA:', err);
+    container.innerHTML = '❌ Erro ao gerar palpite IA.';
+  }
+}
+
+
+
+async function verMapaProbabilidades(fixtureId, homeId, awayId, leagueId, season, matchName) {
+  const container = document.getElementById(`probmap-${fixtureId}`);
+  if (container.innerHTML.trim() !== '') {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '⏳ Calculando mapa de probabilidades...';
+
+  try {
+    const [homeRes, awayRes] = await Promise.all([
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+    ]);
+
+    const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
+    const h = homeStats.response;
+    const a = awayStats.response;
+
+    const gols =
+      parseFloat(h.goals.for.average.total) +
+      parseFloat(h.goals.against.average.total) +
+      parseFloat(a.goals.for.average.total) +
+      parseFloat(a.goals.against.average.total);
+
+    const media = gols / 2;
+
+    const probOver15 = Math.min(95, Math.round((1 - Math.exp(-media / 1.4)) * 100));
+    const probOver25 = Math.min(95, Math.round((1 - Math.exp(-media / 2.2)) * 100));
+    const probBTTS = Math.min(95, Math.round((1 - Math.exp(-media / 2.5)) * 100));
+    const probUnder25 = Math.max(5, 100 - probOver25);
+
+    container.innerHTML = `
+      <p><strong>🔍 ${matchName}</strong></p>
+      <ul>
+        <li>📈 Prob. Over 1.5: <strong>${probOver15}%</strong></li>
+        <li>📈 Prob. Over 2.5: <strong>${probOver25}%</strong></li>
+        <li>🤝 Ambas Marcam: <strong>${probBTTS}%</strong></li>
+        <li>🛡️ Prob. Under 2.5: <strong>${probUnder25}%</strong></li>
+      </ul>`;
+  } catch (error) {
+    console.error('❌ Erro ao calcular ProbMap:', error);
+    container.innerHTML = '❌ Erro ao gerar o mapa de probabilidades.';
+  }
+}
+
+
+
+async function verTendenciaOculta(fixtureId, matchName, homeId, awayId, leagueId, season) {
+  const container = document.getElementById(`tendencia-${fixtureId}`);
+  if (container.innerHTML.trim() !== '') {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '🔍 Analisando tendência oculta...';
+
+  try {
+    // Buscar estatísticas reais dos times
+    const [homeRes, awayRes] = await Promise.all([
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+    ]);
+    const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
+    const h = homeStats.response;
+    const a = awayStats.response;
+
+    // Buscar odds via backend (API-FOOTBALL)
+    const oddsRes = await fetch(`/api/odds/${fixtureId}`);
+    const oddsJson = await oddsRes.json();
+
+    const bookmakers = oddsJson?.response?.[0]?.bookmakers || [];
+    const mercado = bookmakers.find(b =>
+      b.bets?.some(m => m.name.toLowerCase().includes('over/under'))
+    );
+    const overUnderMarket = mercado?.bets?.find(m => m.name.toLowerCase().includes('over/under'));
+
+    const over25 = overUnderMarket?.values?.find(v => v.value === 'Over 2.5');
+    const under25 = overUnderMarket?.values?.find(v => v.value === 'Under 2.5');
+    const over15 = overUnderMarket?.values?.find(v => v.value === 'Over 1.5');
+    const under15 = overUnderMarket?.values?.find(v => v.value === 'Under 1.5');
+
+    const oddOver25 = parseFloat(over25?.odd);
+    const oddUnder25 = parseFloat(under25?.odd);
+    const oddOver15 = parseFloat(over15?.odd);
+    const oddUnder15 = parseFloat(under15?.odd);
+
+    // 🔒 Validação: se nenhuma odd estiver disponível, não continua
+    if (isNaN(oddOver25) && isNaN(oddUnder25) && isNaN(oddOver15) && isNaN(oddUnder15)) {
+      container.innerHTML = '⚠️ Odds de Over/Under não disponíveis para esta partida.';
+      return;
+    }
+
+    // 🔎 Prompt técnico com múltiplas odds
+    const prompt = `
+Você é um analista oculto das casas de apostas. Avalie o jogo "${matchName}" com os dados abaixo e diga se há alguma manipulação sutil ou tendência estratégica nos mercados Over/Under:
+
+📊 Estatísticas:
+- ${h.team.name}: Gols marcados: ${h.goals.for.average.total}, sofridos: ${h.goals.against.average.total}
+- ${a.team.name}: Gols marcados: ${a.goals.for.average.total}, sofridos: ${a.goals.against.average.total}
+
+🎯 Odds disponíveis:
+- Over 1.5: ${isNaN(oddOver15) ? 'N/D' : oddOver15}
+- Over 2.5: ${isNaN(oddOver25) ? 'N/D' : oddOver25}
+- Under 2.5: ${isNaN(oddUnder25) ? 'N/D' : oddUnder25}
+- Under 1.5: ${isNaN(oddUnder15) ? 'N/D' : oddUnder15}
+
+Responda como um analista de precificação. Identifique possíveis distorções ou armadilhas que atraiam o apostador para mercados arriscados. Máximo de 4 linhas.
+`;
+
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    const data = await res.json();
+    const texto = data?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+    container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
+
+  } catch (error) {
+    console.error('❌ Erro ao analisar tendência oculta:', error);
+    container.innerHTML = '❌ Erro ao gerar tendência oculta.';
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function carregarJogos() {
+  let todosJogos = [];
+
+  for (let data of datasBusca) {
+    const response = await fetch(`/api/fixtures?date=${data}`);
+    const json = await response.json();
+    todosJogos = todosJogos.concat(json.response);
+  }
+
+  const agora = new Date();
+  const duasHorasAtras = new Date(agora.getTime() - 2 * 60 * 60 * 1000);
+
+  const jogos = todosJogos.filter(jogo => {
+    const status = jogo.fixture?.status?.short;
+    const horarioJogo = new Date(jogo.fixture?.date);
+    const statusPermitidos = ['NS', '1H', 'HT', '2H', 'ET', 'P'];
+    return statusPermitidos.includes(status) && horarioJogo >= duasHorasAtras;
+  });
+
+  const container = document.getElementById('jogos-container');
+  container.innerHTML = '';
+
+  if (jogos.length === 0) {
+    container.innerHTML = '<p>⚠️ Nenhum jogo relevante encontrado hoje.</p>';
+    return;
+  }
+
+  jogosTotais = jogos.map(jogo => ({
+    id: jogo.fixture.id,
+    home: jogo.teams.home.name,
+    away: jogo.teams.away.name,
+    horario: new Date(jogo.fixture.date).toLocaleTimeString('pt-BR', {
+      timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit'
+    }),
+    jogoOriginal: jogo
+  }));
+
+  renderizarPagina(paginaAtual);
+  criarPaginacao();
+}
+
+function renderizarPagina(pagina) {
+  const container = document.getElementById('jogos-container');
+  container.innerHTML = '';
+
+  const inicio = (pagina - 1) * jogosPorPagina;
+  const fim = inicio + jogosPorPagina;
+  const jogosPagina = jogosTotais.slice(inicio, fim);
+
+  if (jogosPagina.length === 0) {
+    container.innerHTML = '<p>Nenhum jogo nesta página.</p>';
+    return;
+  }
+
+  jogosPagina.forEach(async item => {
+    const jogo = item.jogoOriginal;
+
+    // 🔎 Verificações seguras
+    const id = jogo.fixture?.id;
+    const nomeTimes = `${jogo.teams?.home?.name} x ${jogo.teams?.away?.name}`;
+    const horario = new Date(jogo.fixture?.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dataFormatada = new Date(jogo.fixture?.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+
+    const homeId = parseInt(jogo.teams?.home?.id);
+    const awayId = parseInt(jogo.teams?.away?.id);
+    const leagueId = parseInt(jogo.league?.id);
+    const season = parseInt(jogo.league?.season);
+
+    // 🛡️ Debug: Confirmação dos valores
+    console.log(`📊 ${nomeTimes} | homeId: ${homeId}, awayId: ${awayId}, leagueId: ${leagueId}, season: ${season}`);
+
+    // Se algum parâmetro essencial for inválido, nem renderiza
+    if (!homeId || !awayId || !leagueId || !season || !id) {
+      console.warn(`⚠️ Dados incompletos para o jogo ID ${id}. Ignorado.`);
+      return;
+    }
+
+    const partidaEl = document.createElement('div');
+    partidaEl.classList.add('jogo');
+
+    partidaEl.innerHTML = `
+  <h3>${nomeTimes}</h3>
+  <p>Horário: ${horario}</p>
+  <div class="botoes" id="botoes-${id}">
+    <button onclick="verEstatisticas(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
+      <i class="fas fa-chart-line"></i> Estatísticas
+    </button>
+    <button onclick="analisarComIA('${jogo.teams.home.name}', '${jogo.teams.away.name}', '${jogo.league.name}', '${dataFormatada}', ${id}, ${homeId}, ${awayId}, ${leagueId}, ${season})">
+      <i class="fas fa-brain"></i> Análise IA
+    </button>
+    <button onclick="gerarPalpiteIA('${jogo.teams.home.name}', '${jogo.teams.away.name}', ${id}, ${homeId}, ${awayId}, ${leagueId}, ${season})">
+      <i class="fas fa-lightbulb"></i> Palpite IA
+    </button>
+    <button onclick="verMapaProbabilidades(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
+      <i class="fas fa-chart-bar"></i> ProbMap
+    </button>
+    <button onclick="verTendenciaOculta(${id}, '${nomeTimes}', ${homeId}, ${awayId}, ${leagueId}, ${season})">
+      <i class="fas fa-eye"></i> Tendência Oculta
+    </button>
+    <button onclick="analisarEntradaProfissional(${id}, '${nomeTimes}', 0, 0)">
+      <i class="fas fa-user-secret"></i> Entrada Pro
+    </button>
+    <button onclick="detectarEdge(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
+      <i class="fas fa-percentage"></i> Detecção de Valor
+    </button>
+  </div>
+  <div id="estatisticas-${id}" class="analise-ia"></div>
+  <div id="analise-${id}" class="analise-ia"></div>
+  <div id="palpite-${id}" class="analise-ia"></div>
+  <div id="probmap-${id}" class="analise-ia"></div>
+  <div id="tendencia-${id}" class="analise-ia"></div>
+  <div id="entrada-${id}" class="analise-ia"></div>
+  <div id="edge-${id}" class="analise-ia"></div>
+`;
+
+
+
+    container.appendChild(partidaEl);
+
+    // 🔎 Carrega odds e detecta entrada profissional
+    try {
+      const oddsRes = await fetch(`/api/odds/${id}`);
+      const oddsJson = await oddsRes.json();
+      const oddsList = oddsJson?.data?.[0]?.odds || [];
+
+      if (oddsList.length >= 2) {
+        const oddInicial = parseFloat(oddsList[0].value);
+        const oddFinal = parseFloat(oddsList[oddsList.length - 1].value);
+        const variacao = oddInicial - oddFinal;
+        const botoesContainer = document.querySelector(`#botoes-${id}`);
+
+        if (variacao >= 0.10 && botoesContainer) {
+          const btn = document.createElement('button');
+          btn.textContent = '🎯 Detector de Entrada Profissional';
+          btn.onclick = () => analisarEntradaProfissional(id, nomeTimes, oddInicial, oddFinal);
+          botoesContainer.appendChild(btn);
+
+          const entradaDiv = document.createElement('div');
+          entradaDiv.id = `entrada-${id}`;
+          entradaDiv.classList.add('analise-ia');
+          partidaEl.appendChild(entradaDiv);
+        }
+      }
+    } catch (error) {
+      console.warn('Erro ao detectar entrada profissional:', error);
+    }
+  });
+}
+
+
+function criarPaginacao() {
+  const paginacao = document.getElementById('paginacao');
+  paginacao.innerHTML = '';
+
+  const totalPaginas = Math.ceil(jogosTotais.length / jogosPorPagina);
+  const blocosPorPagina = 10;
+
+  const blocoAtual = Math.floor((paginaAtual - 1) / blocosPorPagina);
+  const inicio = blocoAtual * blocosPorPagina + 1;
+  const fim = Math.min(inicio + blocosPorPagina - 1, totalPaginas);
+
+  if (blocoAtual > 0) {
+    const btnAnterior = document.createElement('button');
+    btnAnterior.textContent = '«';
+    btnAnterior.onclick = () => {
+      paginaAtual = inicio - 1;
+      renderizarPagina(paginaAtual);
+      criarPaginacao();
+    };
+    paginacao.appendChild(btnAnterior);
+  }
+
+  for (let i = inicio; i <= fim; i++) {
+    const botao = document.createElement('button');
+    botao.textContent = i;
+    if (i === paginaAtual) botao.classList.add('ativo');
+    botao.addEventListener('click', () => {
+      paginaAtual = i;
+      renderizarPagina(paginaAtual);
+      criarPaginacao();
+    });
+    paginacao.appendChild(botao);
+  }
+
+  if (fim < totalPaginas) {
+    const btnProximo = document.createElement('button');
+    btnProximo.textContent = '»';
+    btnProximo.onclick = () => {
+      paginaAtual = fim + 1;
+      renderizarPagina(paginaAtual);
+      criarPaginacao();
+    };
+    paginacao.appendChild(btnProximo);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  carregarJogos();
+
+  // 📌 Exportar funções para uso nos botões com onclick
+  window.verEstatisticas = verEstatisticas;
+  window.analisarComIA = analisarComIA;
+  window.gerarPalpiteIA = gerarPalpiteIA;
+  window.verMapaProbabilidades = verMapaProbabilidades;
+  window.verTendenciaOculta = verTendenciaOculta;
+  window.analisarEntradaProfissional = analisarEntradaProfissional;
+  window.detectarArmadilha = detectarArmadilha;
+});
+
