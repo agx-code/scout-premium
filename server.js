@@ -2,7 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
+  console.log(`✅ Servidor rodando em http://localhost:${port}`);
+});
 
 // 📁 Middleware
 app.use(express.json());
