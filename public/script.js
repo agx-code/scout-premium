@@ -266,32 +266,64 @@ async function verMapaProbabilidades(fixtureId, homeId, awayId, leagueId, season
     const h = homeStats.response;
     const a = awayStats.response;
 
-    const gols =
+    const golsTotal =
       parseFloat(h.goals.for.average.total) +
       parseFloat(h.goals.against.average.total) +
       parseFloat(a.goals.for.average.total) +
       parseFloat(a.goals.against.average.total);
 
-    const media = gols / 2;
+    const media = golsTotal / 2;
 
     const probOver15 = Math.min(95, Math.round((1 - Math.exp(-media / 1.4)) * 100));
     const probOver25 = Math.min(95, Math.round((1 - Math.exp(-media / 2.2)) * 100));
     const probBTTS = Math.min(95, Math.round((1 - Math.exp(-media / 2.5)) * 100));
     const probUnder25 = Math.max(5, 100 - probOver25);
 
+    // 🔎 Gols por minuto para o time da casa e visitante
+    const golsMinHome = h.goals.for.minute;
+    const golsMinAway = a.goals.for.minute;
+
+    const getMinutoMaisFatal = (dados) => {
+      let max = 0;
+      let intervalo = '-';
+      for (let minuto in dados) {
+        const total = dados[minuto]?.total || 0;
+        if (total > max) {
+          max = total;
+          intervalo = minuto;
+        }
+      }
+      return { intervalo, total: max };
+    };
+
+    const fatalHome = getMinutoMaisFatal(golsMinHome);
+    const fatalAway = getMinutoMaisFatal(golsMinAway);
+
     container.innerHTML = `
       <p><strong>🔍 ${matchName}</strong></p>
       <ul>
-        <li>📈 Prob. Over 1.5: <strong>${probOver15}%</strong></li>
-        <li>📈 Prob. Over 2.5: <strong>${probOver25}%</strong></li>
-        <li>🤝 Ambas Marcam: <strong>${probBTTS}%</strong></li>
-        <li>🛡️ Prob. Under 2.5: <strong>${probUnder25}%</strong></li>
-      </ul>`;
+        <li>📈 <strong>Prob. Over 1.5:</strong> ${probOver15}%</li>
+        <li>📈 <strong>Prob. Over 2.5:</strong> ${probOver25}%</li>
+        <li>🤝 <strong>Ambas Marcam:</strong> ${probBTTS}%</li>
+        <li>🛡️ <strong>Prob. Under 2.5:</strong> ${probUnder25}%</li>
+      </ul>
+
+      <h4>⏱️ Padrão de Minutos de Gol (Últimos jogos da temporada atual)</h4>
+      <ul>
+        <li>🏠 <strong>${h.team.name}</strong>: faz mais gols entre <strong>${fatalHome.intervalo}</strong> (Total: ${fatalHome.total})</li>
+        <li>🚪 <strong>${a.team.name}</strong>: faz mais gols entre <strong>${fatalAway.intervalo}</strong> (Total: ${fatalAway.total})</li>
+      </ul>
+      <p style="font-size: 13px; color: #666;">🔧 Fonte: Estatísticas por minuto. Dados referentes à média da temporada <strong>${season}</strong>.</p>
+
+    `;
   } catch (error) {
     console.error('❌ Erro ao calcular ProbMap:', error);
     container.innerHTML = '❌ Erro ao gerar o mapa de probabilidades.';
   }
 }
+
+
+
 
 
 
