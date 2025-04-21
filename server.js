@@ -3,15 +3,12 @@ const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
 const port = process.env.PORT || 3001;
-app.listen(port, () => {
-  console.log(`✅ Servidor rodando em http://localhost:${port}`);
-});
 
-// 📁 Middleware
+// Middleware
 app.use(express.json());
-app.use(express.static('public')); // HTML, JS, CSS devem estar na pasta "public"
+app.use(express.static('public'));
 
-// 🔹 ROTA: Fixtures (jogos do dia)
+// 🔹 Fixtures (jogos do dia)
 app.get('/api/fixtures', async (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ error: 'Parâmetro "date" é obrigatório.' });
@@ -20,7 +17,6 @@ app.get('/api/fixtures', async (req, res) => {
     const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}`, {
       headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
     });
-
     const data = await response.json();
     res.json(data);
   } catch (err) {
@@ -29,7 +25,7 @@ app.get('/api/fixtures', async (req, res) => {
   }
 });
 
-// 🔹 ROTA: Estatísticas de um time
+// 🔹 Estatísticas de um time
 app.get('/api/statistics', async (req, res) => {
   const { team, season, league } = req.query;
   if (!team || !season || !league) {
@@ -41,7 +37,6 @@ app.get('/api/statistics', async (req, res) => {
     const response = await fetch(url, {
       headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
     });
-
     const data = await response.json();
     res.json(data);
   } catch (err) {
@@ -50,7 +45,7 @@ app.get('/api/statistics', async (req, res) => {
   }
 });
 
-// 🔹 ROTA: Odds por fixture (API-FOOTBALL, estrutura esperada pelo frontend)
+// 🔹 Odds por fixture
 app.get('/api/odds/:fixtureId', async (req, res) => {
   const { fixtureId } = req.params;
   if (!fixtureId) return res.status(400).json({ error: 'Parâmetro "fixtureId" é obrigatório.' });
@@ -60,10 +55,8 @@ app.get('/api/odds/:fixtureId', async (req, res) => {
     const response = await fetch(url, {
       headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
     });
-
     const data = await response.json();
 
-    // ⚠️ Garante que o frontend receba exatamente a estrutura esperada
     if (!data || !data.response || !Array.isArray(data.response)) {
       return res.status(404).json({ error: 'Odds não encontradas.' });
     }
@@ -75,7 +68,7 @@ app.get('/api/odds/:fixtureId', async (req, res) => {
   }
 });
 
-// 🔹 ROTA: Análise com IA (OpenAI)
+// 🔹 Chat com OpenAI
 app.post('/api/chat', async (req, res) => {
   const { prompt } = req.body;
   if (!prompt) return res.status(400).json({ error: 'O campo "prompt" é obrigatório.' });
@@ -113,7 +106,53 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// 🔸 Inicia o servidor local
+// 🔹 Eventos recentes (últimos 5 jogos do time)
+app.get('/api/events', async (req, res) => {
+  const { team, season, league } = req.query;
+
+  try {
+    console.log(`🔎 Buscando events para Team ${team}, Season ${season}, League ${league}`);
+
+    const response = await fetch(`https://v3.football.api-sports.io/fixtures?team=${team}&season=${season}&league=${league}&last=5`, {
+      headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
+    });
+
+    const data = await response.json();
+    const fixtures = data?.response || [];
+
+    console.log(`📦 Fixtures encontrados: ${fixtures.length}`);
+
+    if (fixtures.length === 0) {
+      console.warn(`⚠️ Nenhuma partida recente encontrada para team=${team}`);
+      return res.json({ response: [] }); // Evita erro no frontend
+    }
+
+    let eventos = [];
+
+    for (let fixture of fixtures) {
+      const fixtureId = fixture.fixture.id;
+      console.log(`🔁 Buscando eventos para Fixture ID: ${fixtureId}`);
+
+      const evRes = await fetch(`https://v3.football.api-sports.io/fixtures/events?fixture=${fixtureId}`, {
+        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
+      });
+
+      const evData = await evRes.json();
+      eventos.push(...(evData.response || []));
+    }
+
+    console.log(`✅ Total de eventos obtidos: ${eventos.length}`);
+    res.json({ response: eventos });
+  } catch (error) {
+    console.error('❌ ERRO EM /api/events:', error);
+    res.status(500).json({ error: 'Erro ao buscar eventos.' });
+  }
+});
+
+
+
+
+// 🔸 Inicia o servidor
 app.listen(port, () => {
   console.log(`✅ Servidor rodando em http://localhost:${port}`);
 });

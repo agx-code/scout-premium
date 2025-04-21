@@ -30,12 +30,16 @@ async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) 
   estatContainer.innerHTML = '📊 Carregando estatísticas...';
 
   try {
-    const [homeRes, awayRes] = await Promise.all([
+    const [homeRes, awayRes, homeEventsRes, awayEventsRes] = await Promise.all([
       fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
-      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/events?team=${homeId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/events?team=${awayId}&season=${season}&league=${leagueId}`)
     ]);
 
     const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
+    const [homeEventsData, awayEventsData] = await Promise.all([homeEventsRes.json(), awayEventsRes.json()]);
+
     const time1 = homeStats.response;
     const time2 = awayStats.response;
 
@@ -45,14 +49,45 @@ async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) 
     const mediaSofridos2 = parseFloat(time2.goals.against.average.total || 0);
     const mediaTotal = (mediaGols1 + mediaGols2 + mediaSofridos1 + mediaSofridos2) / 2;
 
-    const mediaHT1 = parseFloat(time1.goals.for.average.first || 0) + parseFloat(time1.goals.against.average.first || 0);
-    const mediaHT2 = parseFloat(time2.goals.for.average.first || 0) + parseFloat(time2.goals.against.average.first || 0);
-    const mediaTotalHT = (mediaHT1 + mediaHT2) / 2;
+    // 🟨 Cartões por jogo (últimos 5 jogos)
+    const calcularMediaCartoes = (eventos, tipo) => {
+      let totalCartoes = 0;
+      eventos.forEach(ev => {
+        if (ev.type === 'Card' && ev.detail === tipo) {
+          totalCartoes++;
+        }
+      });
+      return (totalCartoes / 5).toFixed(2);
+    };
 
-    const amarelos1 = parseFloat(time1.cards?.yellow?.average || 0);
-    const vermelhos1 = parseFloat(time1.cards?.red?.average || 0);
-    const amarelos2 = parseFloat(time2.cards?.yellow?.average || 0);
-    const vermelhos2 = parseFloat(time2.cards?.red?.average || 0);
+    const amarelos1 = calcularMediaCartoes(homeEventsData.response, 'Yellow Card');
+    const vermelhos1 = calcularMediaCartoes(homeEventsData.response, 'Red Card');
+    const amarelos2 = calcularMediaCartoes(awayEventsData.response, 'Yellow Card');
+    const vermelhos2 = calcularMediaCartoes(awayEventsData.response, 'Red Card');
+
+    // ⏱️ Gols no 1º tempo com base em eventos (últimos 5 jogos)
+    const calcularMediaGols1T = (eventos, teamName) => {
+      const golsPorJogo = {};
+
+      eventos.forEach(ev => {
+        if (
+          ev.time?.elapsed <= 45 &&
+          ev.type === 'Goal' &&
+          ev.team?.name === teamName
+        ) {
+          const id = ev.fixture?.id;
+          if (!golsPorJogo[id]) golsPorJogo[id] = 0;
+          golsPorJogo[id]++;
+        }
+      });
+
+      const totalGols = Object.values(golsPorJogo).reduce((acc, val) => acc + val, 0);
+      return (totalGols / 5).toFixed(2);
+    };
+
+    const golsHT1 = calcularMediaGols1T(homeEventsData.response, time1.team.name);
+    const golsHT2 = calcularMediaGols1T(awayEventsData.response, time2.team.name);
+    const mediaTotalHT = ((parseFloat(golsHT1) + parseFloat(golsHT2)) / 2).toFixed(2);
 
     const probOver1_5 = Math.min(95, Math.round((1 - Math.exp(-mediaTotal / 1.4)) * 100));
     const probOver2_5 = Math.min(95, Math.round((1 - Math.exp(-mediaTotal / 2.2)) * 100));
@@ -62,14 +97,14 @@ async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) 
       <p><strong>📊 ${matchName}</strong></p>
       <ul style="padding-left: 16px; line-height: 1.6; list-style-type: none;">
         <li>⚽ Gols Médios (FT): <strong>${mediaTotal.toFixed(2)}</strong></li>
-        <li>⏱️ Gols 1ºT: <strong>${mediaTotalHT.toFixed(2)}</strong></li>
+        <li>⏱️ Gols 1ºT: <strong>${mediaTotalHT}</strong> <span style="font-size: 12px; color: #888;">(Média para essa partida)</span></li>
         <li>📈 Over 1.5: <strong>${probOver1_5}%</strong></li>
         <li>📊 Over 2.5: <strong>${probOver2_5}%</strong></li>
         <li>🛡️ Under 2.5: <strong>${probUnder2_5}%</strong></li>
-        <li>🟨 ${time1.team.name} Amarelos: <strong>${amarelos1.toFixed(2)}</strong></li>
-        <li>🔴 ${time1.team.name} Vermelhos: <strong>${vermelhos1.toFixed(2)}</strong></li>
-        <li>🟨 ${time2.team.name} Amarelos: <strong>${amarelos2.toFixed(2)}</strong></li>
-        <li>🔴 ${time2.team.name} Vermelhos: <strong>${vermelhos2.toFixed(2)}</strong></li>
+        <li>🟨 ${time1.team.name} Amarelos: <strong>${amarelos1}</strong> <span style="font-size: 12px; color: #888;">(Média por jogo)</span></li>
+        <li>🔴 ${time1.team.name} Vermelhos: <strong>${vermelhos1}</strong> <span style="font-size: 12px; color: #888;">(Média por jogo)</span></li>
+        <li>🟨 ${time2.team.name} Amarelos: <strong>${amarelos2}</strong> <span style="font-size: 12px; color: #888;">(Média por jogo)</span></li>
+        <li>🔴 ${time2.team.name} Vermelhos: <strong>${vermelhos2}</strong> <span style="font-size: 12px; color: #888;">(Média por jogo)</span></li>
       </ul>
     `;
   } catch (error) {
@@ -77,6 +112,9 @@ async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) 
     estatContainer.innerHTML = '❌ Erro ao carregar estatísticas.';
   }
 }
+
+
+
 
 
 async function analisarComIA(time1, time2, campeonato, dataFormatada, id, homeId, awayId, leagueId, season) {
@@ -319,6 +357,115 @@ Responda como um analista de precificação. Identifique possíveis distorções
 }
 
 
+function analisarEntradaProfissional(id, nomeTimes, oddInicial, oddFinal) {
+  const container = document.getElementById(`entrada-${id}`);
+  
+  // Se já estiver aberto, fecha
+  if (container.innerHTML.trim() !== '') {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <p style="font-size: 15px; color: #1f2937;">
+      🚧 <strong>Entrada Profissional:</strong> Em breve essa funcionalidade estará disponível!
+    </p>
+  `;
+}
+
+
+
+async function detectarEdge(fixtureId, homeId, awayId, leagueId, season, matchName) {
+  const container = document.getElementById(`edge-${fixtureId}`);
+  if (!container) return;
+
+  // 👉 Toggle: se já estiver visível, esconde
+  if (container.innerHTML.trim() !== '') {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '🔍 Calculando valor esperado...';
+
+  try {
+    const [homeRes, awayRes, oddsRes] = await Promise.all([
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/odds/${fixtureId}`)
+    ]);
+
+    const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
+    const stats1 = homeStats.response;
+    const stats2 = awayStats.response;
+    const oddsData = oddsRes?.ok ? await oddsRes.json() : null;
+
+    const mediaGols =
+      parseFloat(stats1.goals.for.average.total) +
+      parseFloat(stats1.goals.against.average.total) +
+      parseFloat(stats2.goals.for.average.total) +
+      parseFloat(stats2.goals.against.average.total);
+
+    const mediaTotal = mediaGols / 2;
+
+    const probs = {
+      "Over 0.5": Math.min(99, Math.round((1 - Math.exp(-mediaTotal / 0.6)) * 100)),
+      "Over 1.5": Math.min(99, Math.round((1 - Math.exp(-mediaTotal / 1.4)) * 100)),
+      "Over 2.5": Math.min(99, Math.round((1 - Math.exp(-mediaTotal / 2.2)) * 100)),
+      "Under 0.5": Math.max(1, 100 - Math.round((1 - Math.exp(-mediaTotal / 0.6)) * 100)),
+      "Under 1.5": Math.max(1, 100 - Math.round((1 - Math.exp(-mediaTotal / 1.4)) * 100)),
+      "Under 2.5": Math.max(1, 100 - Math.round((1 - Math.exp(-mediaTotal / 2.2)) * 100))
+    };
+
+    const oddsMercado = oddsData?.response?.[0]?.bookmakers?.find(b =>
+      b.bets?.some(m => m.name.toLowerCase().includes('over/under'))
+    )?.bets?.find(m => m.name.toLowerCase().includes('over/under'))?.values || [];
+
+    const analise = [];
+
+    for (const mercado of ["Over 0.5", "Over 1.5", "Over 2.5", "Under 0.5", "Under 1.5", "Under 2.5"]) {
+      const oddObj = oddsMercado.find(o => o.value === mercado);
+      if (!oddObj) continue;
+
+      const odd = parseFloat(oddObj.odd);
+      const probImpl = Math.round((1 / odd) * 100);
+      const edge = probs[mercado] - probImpl;
+
+      analise.push({
+        mercado,
+        odd,
+        probReal: probs[mercado],
+        probImpl,
+        edge
+      });
+    }
+
+    if (analise.length === 0) {
+      container.innerHTML = '⚠️ Odds de Over/Under não disponíveis.';
+      return;
+    }
+
+    let html = `<strong>📊 Detecção de Valor — ${matchName}</strong><br><ul style="line-height:1.6; padding-left:18px">`;
+    analise.forEach(({ mercado, odd, probReal, probImpl, edge }) => {
+      const destaque =
+        edge >= 8
+          ? `🔥 <strong style="color:green">${mercado} com +${edge.toFixed(1)}% de valor esperado</strong>`
+          : edge <= -8
+          ? `⚠️ <strong style="color:red">${mercado} com ${edge.toFixed(1)}% de valor esperado</strong>`
+          : `${mercado} com ${edge >= 0 ? '+' : ''}${edge.toFixed(1)}% de valor esperado`;
+
+      html += `<li>${destaque} (Odd: ${odd}, Real: ${probReal}%, Implícita: ${probImpl}%)</li>`;
+    });
+    html += '</ul>';
+
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('❌ Erro ao detectar valor:', error);
+    container.innerHTML = '❌ Erro ao detectar valor estatístico.';
+  }
+}
+
+
+
 
 
 
@@ -538,5 +685,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.verTendenciaOculta = verTendenciaOculta;
   window.analisarEntradaProfissional = analisarEntradaProfissional;
   window.detectarArmadilha = detectarArmadilha;
+  window.detectarEdge = detectarEdge;
 });
 
