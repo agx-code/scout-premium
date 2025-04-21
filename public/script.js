@@ -566,7 +566,12 @@ function renderizarPagina(pagina) {
     });
     
     partidaEl.innerHTML = `
-      <h3>${nomeTimes}</h3>
+      <h3>
+  <img src="${jogo.teams.home.logo}" alt="Logo Home" style="height:20px; vertical-align:middle; margin-right:6px;">
+  ${jogo.teams.home.name} x ${jogo.teams.away.name}
+  <img src="${jogo.teams.away.logo}" alt="Logo Away" style="height:20px; vertical-align:middle; margin-left:6px;">
+</h3>
+
       <p>${dataDia.charAt(0).toUpperCase() + dataDia.slice(1)}</p>
       <p>Horário: ${horario}</p>
     
