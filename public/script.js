@@ -406,21 +406,64 @@ Responda como um analista de precificação. Identifique possíveis distorções
 }
 
 
-function analisarEntradaProfissional(id, nomeTimes, oddInicial, oddFinal) {
-  const container = document.getElementById(`entrada-${id}`);
+// 🧠 Função IA de Cenário Ideal para Entrada (com análise condicional ao vivo)
+async function analisarEntradaProfissional(fixtureId, nomeTimes, oddInicial, oddFinal) {
+  const container = document.getElementById(`entrada-${fixtureId}`);
   
-  // Se já estiver aberto, fecha
   if (container.innerHTML.trim() !== '') {
     container.innerHTML = '';
     return;
   }
 
-  container.innerHTML = `
-    <p style="font-size: 15px; color: #1f2937;">
-      🚧 <strong>Entrada Profissional:</strong> Em breve essa funcionalidade estará disponível!
-    </p>
-  `;
+  container.innerHTML = '🔍 Analisando cenário ideal de entrada ao vivo...';
+
+  try {
+    const res = await fetch(`/api/live/${fixtureId}`);
+    const data = await res.json();
+
+    const {
+      time,
+      elapsed,
+      goals,
+      dangerous_attacks,
+      total_shots,
+      corners,
+      possession
+    } = data;
+
+    const prompt = `
+Você é um especialista em trading esportivo ao vivo. Com base nos dados ao vivo da partida ${nomeTimes}, diga o cenário ideal para uma entrada de valor nas próximas jogadas.
+
+⏱️ Tempo: ${elapsed}'  
+⚽ Placar: ${goals}  
+🔥 Ataques perigosos: ${dangerous_attacks}  
+🥅 Finalizações: ${total_shots}  
+🎯 Escanteios: ${corners}  
+🔁 Posse de bola: ${possession}  
+
+📌 Gere uma sugestão técnica como:
+“⚠️ Se o jogo continuar 0x0 até os 30 minutos e houver 3+ finalizações do time mandante, considere entrada em Over 1.5.”
+
+Escreva de forma profissional, direta, sem floreios. A sugestão deve parecer de um trader experiente.
+`;
+
+    const aiRes = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    const aiData = await aiRes.json();
+    const texto = aiData?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+
+    container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
+  } catch (err) {
+    console.error('❌ Erro na IA de Entrada Pro:', err);
+    container.innerHTML = '❌ Erro ao gerar sugestão de entrada ao vivo.';
+  }
 }
+
+
 
 
 

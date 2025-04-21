@@ -149,6 +149,42 @@ app.get('/api/events', async (req, res) => {
   }
 });
 
+// 📡 Rota para buscar dados ao vivo de uma partida
+app.get('/api/live/:fixtureId', async (req, res) => {
+  const fixtureId = req.params.fixtureId;
+
+  try {
+    const response = await fetch(`https://api.sportmonks.com/v3/football/livescores/inplay?include=stats&filters=fixture_id:${fixtureId}&api_token=${process.env.SPORTMONKS_KEY}`);
+
+    const data = await response.json();
+
+    if (!data || !data.data || data.data.length === 0) {
+      return res.status(404).json({ error: 'Dados ao vivo não encontrados para este jogo.' });
+    }
+
+    const liveMatch = data.data[0];
+    const stats = liveMatch.stats || [];
+
+    const estatisticas = {
+      time: liveMatch.name,
+      placar: `${liveMatch.scores?.home_score || 0} x ${liveMatch.scores?.away_score || 0}`,
+      tempo: liveMatch.time?.minute || 0,
+      ataquesPerigosos: stats.find(s => s.type === 'dangerous_attacks')?.value || '-',
+      chutesTotais: stats.find(s => s.type === 'total_shots')?.value || '-',
+      escanteios: stats.find(s => s.type === 'corners')?.value || '-',
+      posseBola: stats.find(s => s.type === 'possession')?.value || '-'
+    };
+
+    res.json(estatisticas);
+  } catch (error) {
+    console.error('Erro ao buscar dados ao vivo:', error);
+    res.status(500).json({ error: 'Erro ao buscar dados ao vivo.' });
+  }
+});
+
+// Exporta app para uso principal
+module.exports = app;
+
 
 
 
