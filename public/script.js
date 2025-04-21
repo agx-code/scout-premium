@@ -129,14 +129,12 @@ async function analisarComIA(time1, time2, campeonato, dataFormatada, id, homeId
   container.innerHTML = '🧠 Gerando análise estratégica com IA...';
 
   try {
-    // 🔎 Requisições simultâneas às estatísticas dos dois times
     const [homeRes, awayRes] = await Promise.all([
       fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
       fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
     ]);
 
     const [homeData, awayData] = await Promise.all([homeRes.json(), awayRes.json()]);
-
     const h = homeData.response;
     const a = awayData.response;
 
@@ -145,26 +143,44 @@ async function analisarComIA(time1, time2, campeonato, dataFormatada, id, homeId
       return;
     }
 
-    // 📊 Prompt técnico e estratégico
     const prompt = `
-Analise o jogo entre ${time1} x ${time2}, marcado para o dia ${dataFormatada} pela competição ${campeonato}. 
-Você é um profissional da casa de apostas, focado em inteligência de mercado, comportamento de público e ajustes de linha.
+Você é um analista profissional de uma casa de apostas internacional. Sua função é criar uma análise altamente estratégica, técnica e realista do jogo entre ${time1} x ${time2}, marcado para o dia ${dataFormatada}, pela competição ${campeonato}.
 
-📊 Estatísticas disponíveis:
-- ${time1}: média de gols marcados: ${h.goals.for.average.total}, sofridos: ${h.goals.against.average.total}
-- ${time2}: média de gols marcados: ${a.goals.for.average.total}, sofridos: ${a.goals.against.average.total}
+Use o seguinte modelo com formatação rica e emojis estratégicos:
 
-Use esta estrutura na resposta:
+---
 
 1️⃣ Introdução 📌  
-2️⃣ O Jogo e a Percepção Pública 🔍  
-3️⃣ Estratégias da Casa 🏦  
-4️⃣ Estatísticas Reais Consideradas pela Casa 📈  
-5️⃣ Onde Está o Valor Real? 💰  
-6️⃣ Conclusão Estratégica 🧠
+Apresente o confronto como uma casa de aposta apresentaria internamente: local, contexto da competição, momento emocional do duelo, e data/hora. Evite frases genéricas. Mostre domínio de mercado.
 
-🔒 Seja direto, racional, sem floreios. Escreva como um oddsmaker experiente de uma casa de apostas internacional.
-    `;
+2️⃣ O Jogo e a Percepção Pública 🔍  
+Mostre como o público enxerga o confronto. Use dados dos últimos 🔟 jogos (ex: ✅ 6, 🤝 3, ❌ 1). Dê destaque se o nome de um time engana, ou se há "modinha de aposta" envolvida. Mostre se o público está enviesado por resultados recentes.
+
+3️⃣ Estratégias da Casa 🏦  
+Explique como as casas estão posicionando suas odds para induzir o comportamento de massa. Use termos como: "odds atrativas no mercado BTTS", "linhas ajustadas para evitar liquidez no under", "handicap como armadilha emocional", etc.
+
+4️⃣ Estatísticas Reais Consideradas pela Casa 📈  
+Use dados como:
+- Gols marcados/sofridos nos últimos 🔟 jogos;
+- Tendência de gols (over 2.5 ou under 2.5);
+- Histórico de confrontos (últimos 5-6 jogos entre eles);
+- BTTS sim/não;
+- Gols no 1º tempo.
+
+5️⃣ Onde Está o Valor Real? 💰  
+Aponte os mercados com valor técnico e emocional. Diga, por exemplo:
+- “🎯 Under 2.5: baseado na média de gols combinada de 2.0 e na oscilação recente ofensiva.”
+- “🤝 Empate: linha emocional favorece o time visitante, mas o jogo tende ao equilíbrio.”
+Evite generalidades. Seja preciso, numérico, técnico.
+
+6️⃣ Conclusão Estratégica 🧠  
+Feche como um trader: diga onde há distorção, se o mercado está bem ajustado ou se o público está sendo levado para armadilhas. Evite palpites. Foque em leitura de mercado.
+
+---
+
+🧠 Linguagem técnica, firme, como se fosse uma ata interna da casa de apostas. Emojis devem reforçar leitura rápida. Nada genérico. Nada "óbvio".
+`;
+
 
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -173,7 +189,6 @@ Use esta estrutura na resposta:
     });
 
     const data = await response.json();
-
     const texto = data?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
     container.innerHTML = `<p style="margin-top: 10px;">${texto.replace(/\n/g, '<br>')}</p>`;
   } catch (error) {
@@ -181,6 +196,8 @@ Use esta estrutura na resposta:
     container.innerHTML = '<p style="color: red;">❌ Erro ao gerar análise com a IA.</p>';
   }
 }
+
+
 
 
 
