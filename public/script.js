@@ -558,9 +558,18 @@ function renderizarPagina(pagina) {
     const partidaEl = document.createElement('div');
     partidaEl.classList.add('jogo');
 
+    const dataDia = new Date(jogo.fixture?.date).toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'America/Sao_Paulo'
+    });
+    
     partidaEl.innerHTML = `
-  <h3>${nomeTimes}</h3>
-  <p>Horário: ${horario}</p>
+      <h3>${nomeTimes}</h3>
+      <p>${dataDia.charAt(0).toUpperCase() + dataDia.slice(1)}</p>
+      <p>Horário: ${horario}</p>
+    
   <div class="botoes" id="botoes-${id}">
     <button onclick="verEstatisticas(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
       <i class="fas fa-chart-line"></i> Estatísticas
