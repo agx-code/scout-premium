@@ -142,6 +142,12 @@ button.selecionado i {
   color: #1f2937 !important;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
   </style>
 
 
@@ -158,6 +164,16 @@ button.selecionado i {
 
 </head>
 <body>
+
+  
+<!-- Tela de Carregamento -->
+<div id="loading-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+  <h1 style="color: #2563eb; font-family: 'Inter', sans-serif;"><i class="fas fa-bolt"></i> Scoutei</h1>
+  <div class="spinner" style="margin-top: 20px; width: 50px; height: 50px; border: 5px solid #cbd5e1; border-top: 5px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+</div>
+
+
+
   <div id="conteudo-principal" style="display: none;">
     <header>
       <h1><i class="fas fa-bolt"></i> Scoutei </h1>

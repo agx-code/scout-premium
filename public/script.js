@@ -836,8 +836,10 @@ function criarPaginacao() {
 
 document.addEventListener('DOMContentLoaded', () => {
   carregarJogos().then(() => {
-    document.getElementById('conteudo-principal').style.display = 'block';
+    document.getElementById('loading-screen').style.display = 'none';  // Esconde o loading
+    document.getElementById('conteudo-principal').style.display = 'block';  // Mostra o conteúdo principal
   });
+  
 
   document.addEventListener('click', function (e) {
     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
