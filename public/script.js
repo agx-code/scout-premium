@@ -8,6 +8,8 @@ const cacheOdds = {};
 let jogosTotais = [];
 let paginaAtual = 1;
 const jogosPorPagina = 10;
+let carregandoMais = false; // controle de carregamento
+
 
 function getDataHojeBrasil() {
   const agora = new Date();
@@ -843,6 +845,19 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.toggle('selecionado');
     }
   });
+
+  window.addEventListener('scroll', () => {
+    if (carregandoMais) return;
+  
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    if (scrollTop + clientHeight >= scrollHeight - 300) {
+      carregandoMais = true;
+      paginaAtual++;
+      renderizarPagina(paginaAtual);
+      setTimeout(() => carregandoMais = false, 1000);
+    }
+  });
+  
   
 
   // 📌 Exportar funções para uso nos botões com onclick
