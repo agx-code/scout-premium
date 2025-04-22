@@ -131,6 +131,17 @@
     #paginacao button:hover {
       background: #93c5fd;
     }
+
+    /* Estilo do botão selecionado (amarelo) */
+button.selecionado {
+  background-color: #facc15 !important; /* amarelo */
+  color: #1f2937 !important; /* texto escuro */
+}
+
+button.selecionado i {
+  color: #1f2937 !important;
+}
+
   </style>
 
 
@@ -147,38 +158,29 @@
 
 </head>
 <body>
-  <header>
-    <h1><i class="fas fa-bolt"></i> Scoutei </h1>
-  </header>
+  <div id="conteudo-principal" style="display: none;">
+    <header>
+      <h1><i class="fas fa-bolt"></i> Scoutei </h1>
+    </header>
 
-  <div id="jogos-container">
-    <div class="jogo">
-      <h3>Time A x Time B</h3>
-      <p>Horário: 18:00</p>
-      <div class="botoes">
-        <button><i class="fas fa-chart-line"></i> Estatísticas</button>
-        <button><i class="fas fa-brain"></i> Análise IA</button>
-        <button><i class="fas fa-lightbulb"></i> Palpite IA</button>
-        <button><i class="fas fa-chart-bar"></i> ProbMap</button>
-        <button><i class="fas fa-eye"></i> Tendência Oculta</button>
-        <button><i class="fas fa-user-secret"></i> Entrada Pro</button>
-        <button><i class="fas fa-fire"></i> Detecção de Valor</button>
-      </div>
-      <div class="analise-ia">
-        <strong>Exemplo:</strong> Este será o conteúdo da análise ou IA.
-      </div>
+    <div id="jogos-container"></div>
+
+    <div id="paginacao">
+      <button class="ativo">1</button>
+      <button>2</button>
+      <button>3</button>
     </div>
-  </div>
 
-  <div id="paginacao">
-    <button class="ativo">1</button>
-    <button>2</button>
-    <button>3</button>
-  </div>
-
-  <p style="font-size: 13px; color: #888; text-align: center; margin-top: 40px;">
-    © 2025 ScoutEI. Todos os direitos reservados. Este site é apenas para fins informativos e de entretenimento. O ScoutEI não é uma casa de apostas e não realiza ou incentiva jogos de azar. As análises aqui apresentadas são baseadas em estatísticas públicas e não garantem resultados futuros. Ao utilizar esta plataforma, você concorda com os nossos <a href="/termos" style="color: #888; text-decoration: underline;">Termos de Uso</a> e <a href="/privacidade" style="color: #888; text-decoration: underline;">Política de Privacidade</a>.
-  </p>
+    <!-- Rodapé -->
+    <p style="font-size: 13px; color: #888; text-align: center; margin-top: 40px;">
+      © 2025 ScoutEI. Todos os direitos reservados. Este site é apenas para fins informativos e de entretenimento.
+      O ScoutEI não é uma casa de apostas e não realiza ou incentiva jogos de azar. As análises aqui apresentadas são
+      baseadas em estatísticas públicas e não garantem resultados futuros.
+      Ao utilizar esta plataforma, você concorda com os nossos
+      <a href="/termos" style="color: #888; text-decoration: underline;">Termos de Uso</a> e
+      <a href="/privacidade" style="color: #888; text-decoration: underline;">Política de Privacidade</a>.
+    </p>
+    
 
   <!-- Modal Termos de Uso -->
 <div id="modal-termos" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000080; z-index:1000; align-items:center; justify-content:center;">

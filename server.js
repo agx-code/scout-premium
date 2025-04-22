@@ -187,6 +187,135 @@ module.exports = app;
 
 
 
+// ✅ SERVER.JS COMPLETO COM PADRÃO DE GOLS VIA API-FOOTBALL
+
+app.get('/api/insider/:fixtureId', async (req, res) => {
+  const fixtureId = req.params.fixtureId;
+  console.log('🚨 Iniciando análise COMPORTAMENTO SUSPEITO para fixtureId:', fixtureId);
+
+  try {
+    // 1. Odds da partida
+    const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?fixture=${fixtureId}`, {
+      headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
+    });
+    const oddsData = await oddsRes.json();
+    console.log('✅ Odds carregadas');
+
+    const bookmakers = oddsData?.response?.[0]?.bookmakers || [];
+    const mercado = bookmakers.find(b => b.bets?.some(m => m.name.toLowerCase().includes('over/under')));
+    const odds = mercado?.bets?.find(m => m.name.toLowerCase().includes('over/under'))?.values || [];
+
+    const oddOver25 = odds.find(o => o.value === 'Over 2.5')?.odd;
+    const oddUnder25 = odds.find(o => o.value === 'Under 2.5')?.odd;
+    console.log('🎯 Over 2.5:', oddOver25, '| Under 2.5:', oddUnder25);
+
+    const movimentoAnormal = parseFloat(oddOver25) < 1.70 || parseFloat(oddUnder25) > 2.50;
+
+    const alertaOdds = movimentoAnormal
+      ? '⚠️ Movimento anormal detectado → As odds estão fora do comum.'
+      : '✅ Sem indícios de anormalidade → As odds estão dentro dos padrões normais do mercado.';
+
+    // 2. Buscar últimos jogos via API-FOOTBALL
+    const fixtureInfo = await fetch(`https://v3.football.api-sports.io/fixtures?id=${fixtureId}`, {
+      headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
+    });
+    const fixtureJson = await fixtureInfo.json();
+    const fixture = fixtureJson?.response?.[0];
+    const homeId = fixture?.teams?.home?.id;
+    const awayId = fixture?.teams?.away?.id;
+    const season = fixture?.league?.season;
+    const leagueId = fixture?.league?.id;
+
+    console.log('🏠 Home ID:', homeId, '| 🛫 Away ID:', awayId);
+
+    if (!homeId || !awayId || !season || !leagueId) {
+      throw new Error('Dados do jogo incompletos');
+    }
+
+    const [resHome, resAway] = await Promise.all([
+      fetch(`https://v3.football.api-sports.io/fixtures?team=${homeId}&season=${season}&league=${leagueId}&last=5`, {
+        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
+      }),
+      fetch(`https://v3.football.api-sports.io/fixtures?team=${awayId}&season=${season}&league=${leagueId}&last=5`, {
+        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
+      })
+    ]);
+
+    const jsonHome = await resHome.json();
+    const jsonAway = await resAway.json();
+
+    const resultados = [...(jsonHome?.response || []), ...(jsonAway?.response || [])].map(j => {
+      const home = j.goals?.home ?? 0;
+      const away = j.goals?.away ?? 0;
+      return `${home}-${away}`;
+    });
+
+    let padraoGols = 'N/D';
+    let placarInduzido = 'desconhecido';
+    let repeticaoCritica = false;
+
+    if (resultados.length > 0) {
+      const freq = {};
+      for (let r of resultados) freq[r] = (freq[r] || 0) + 1;
+      const maisRepetido = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+
+      if (maisRepetido) {
+        placarInduzido = maisRepetido[0];
+        if (maisRepetido[1] >= 2) {
+          repeticaoCritica = true;
+          padraoGols = `🔁 O resultado: ${maisRepetido[0]} apareceu ${maisRepetido[1]}x nas últimas 5 partidas.`;
+        } else {
+          padraoGols = `🔄 Resultado mais comum: ${maisRepetido[0]} (${maisRepetido[1]}x)`;
+        }
+      }
+    }
+
+    const liga = oddsData?.response?.[0]?.league?.name || '';
+    const ligasDeRisco = ['India', 'Georgia', 'Indonésia', 'Tailândia', 'Malásia', 'Albânia'];
+    const ligaSuspeita = ligasDeRisco.some(l => liga.toLowerCase().includes(l.toLowerCase()));
+
+    const mensagemFinal =
+      (movimentoAnormal || ligaSuspeita) && repeticaoCritica
+        ? `🚨 Este jogo apresenta comportamento suspeito. Placar mais recorrente: ${placarInduzido}.`
+        : '✅ Este jogo não apresenta comportamento suspeito.';
+
+    console.log('✅ Modo Comportamento Suspeito finalizado com sucesso');
+    res.json({
+      alertaOdds,
+      padraoGols,
+      ligaSuspeita,
+      mensagemFinal
+    });
+
+  } catch (err) {
+    console.error('❌ ERRO REAL NO MODO COMPORTAMENTO SUSPEITO:', err.message);
+    res.status(500).json({ error: 'Erro interno ao processar comportamento suspeito.' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // 🔸 Inicia o servidor
 app.listen(port, () => {

@@ -562,6 +562,44 @@ async function detectarEdge(fixtureId, homeId, awayId, leagueId, season, matchNa
 
 
 
+// Exemplo de chamada para últimos jogos do time via API-FOOTBALL
+async function verModoInsider(fixtureId) {
+  const container = document.getElementById(`insider-${fixtureId}`);
+  if (container.innerHTML.trim() !== '') {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '🔍 Analisando como Insider...';
+
+  try {
+    const res = await fetch(`/api/insider/${fixtureId}`);
+    if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+
+    const data = await res.json();
+    if (data.error) {
+      container.innerHTML = '❌ Erro ao processar modo Insider.';
+      return;
+    }
+
+    const { alertaOdds, padraoGols, ligaSuspeita, mensagemFinal } = data;
+
+    container.innerHTML = `
+      <p><strong>🕵️‍♂️ Comportamento Suspeito</strong></p>
+      <ul style="line-height: 1.6; padding-left: 18px;">
+        <li>📊 Odds: ${alertaOdds}</li>
+        <li>📈 Padrão de Gols: ${padraoGols}</li>
+        <li>🌍 Liga de Risco: ${ligaSuspeita ? 'Sim' : 'Não'}</li>
+      </ul>
+      <p style="margin-top: 10px; font-weight: bold;">${mensagemFinal}</p>
+    `;
+  } catch (err) {
+    console.error('❌ Erro no modo Insider:', err);
+    container.innerHTML = '❌ Erro ao processar modo Insider.';
+  }
+}
+
+
 
 
 
@@ -571,6 +609,9 @@ async function detectarEdge(fixtureId, homeId, awayId, leagueId, season, matchNa
 
 
 async function carregarJogos() {
+  document.getElementById('jogos-container').innerHTML = ''; // Limpa antes de começar
+  document.getElementById('paginacao').style.display = 'none'; // Oculta paginação até ter jogos reais
+  
   let todosJogos = [];
 
   for (let data of datasBusca) {
@@ -689,6 +730,10 @@ function renderizarPagina(pagina) {
     <button onclick="detectarEdge(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
       <i class="fas fa-percentage"></i> Detecção de Valor
     </button>
+    <button onclick="verModoInsider(${id}, '${nomeTimes}', ${homeId}, ${awayId}, ${leagueId}, ${season})">
+  <i class="fas fa-user-lock"></i> Comportamento Suspeito
+</button>
+
   </div>
   <div id="estatisticas-${id}" class="analise-ia"></div>
   <div id="analise-${id}" class="analise-ia"></div>
@@ -697,11 +742,18 @@ function renderizarPagina(pagina) {
   <div id="tendencia-${id}" class="analise-ia"></div>
   <div id="entrada-${id}" class="analise-ia"></div>
   <div id="edge-${id}" class="analise-ia"></div>
+  <div id="insider-${id}" class="analise-ia"></div>
+
 `;
 
 
 
     container.appendChild(partidaEl);
+
+    document.getElementById('paginacao').style.display = 'block';
+    document.getElementById('conteudo-principal').style.display = 'block';
+
+
 
     // 🔎 Carrega odds e detecta entrada profissional
     try {
@@ -781,7 +833,17 @@ function criarPaginacao() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  carregarJogos();
+  carregarJogos().then(() => {
+    document.getElementById('conteudo-principal').style.display = 'block';
+  });
+
+  document.addEventListener('click', function (e) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+      const btn = e.target.tagName === 'BUTTON' ? e.target : e.target.closest('button');
+      btn.classList.toggle('selecionado');
+    }
+  });
+  
 
   // 📌 Exportar funções para uso nos botões com onclick
   window.verEstatisticas = verEstatisticas;
@@ -792,5 +854,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.analisarEntradaProfissional = analisarEntradaProfissional;
   window.detectarArmadilha = detectarArmadilha;
   window.detectarEdge = detectarEdge;
+  window.verModoInsider = verModoInsider;
 });
+
+
 

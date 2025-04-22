@@ -168,5 +168,15 @@
   button i {
     color: white !important;
   }
+
+  button.selecionado {
+    background-color: #facc15 !important; /* amarelo */
+    color: #1f2937 !important; /* texto escuro para contraste */
+  }
+  
+  button.selecionado i {
+    color: #1f2937 !important; /* ícone escuro também */
+  }
+  
   
   
