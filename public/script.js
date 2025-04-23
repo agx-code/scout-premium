@@ -612,7 +612,7 @@ async function verModoInsider(fixtureId) {
 
 async function carregarJogos() {
   document.getElementById('jogos-container').innerHTML = ''; // Limpa antes de começar
-  document.getElementById('paginacao').style.display = 'none'; // Oculta paginação até ter jogos reais
+  
   
   let todosJogos = [];
 
@@ -654,9 +654,14 @@ async function carregarJogos() {
   criarPaginacao();
 }
 
-function renderizarPagina(pagina) {
+function renderizarPagina(pagina, append = false) {
   const container = document.getElementById('jogos-container');
-  container.innerHTML = '';
+
+  // Só limpa se NÃO for o scroll infinito
+  if (!append) {
+    container.innerHTML = '';
+  }
+
 
   const inicio = (pagina - 1) * jogosPorPagina;
   const fim = inicio + jogosPorPagina;
@@ -664,8 +669,12 @@ function renderizarPagina(pagina) {
 
   if (jogosPagina.length === 0) {
     container.innerHTML = '<p>Nenhum jogo nesta página.</p>';
+    document.getElementById('paginacao').style.display = 'block';
     return;
   }
+  
+  document.getElementById('paginacao').style.display = 'block'; // GARANTE que os botões aparecem!
+  
 
   jogosPagina.forEach(async item => {
     const jogo = item.jogoOriginal;
@@ -848,17 +857,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.addEventListener('scroll', () => {
-    if (carregandoMais) return;
   
-    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-    if (scrollTop + clientHeight >= scrollHeight - 300) {
-      carregandoMais = true;
-      paginaAtual++;
-      renderizarPagina(paginaAtual);
-      setTimeout(() => carregandoMais = false, 1000);
-    }
-  });
+  
   
   
 
