@@ -1,6 +1,7 @@
   export async function gerarAnaliseChatGPT(promptUser) {
     const apiKey = process.env.OPENAI_API_KEY;
     const endpoint = "https://api.openai.com/v1/chat/completions";
+    console.log('aqui')
   
     const body = {
       model: "gpt-3.5-turbo",

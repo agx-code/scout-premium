@@ -3,6 +3,55 @@ const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
 const port = process.env.PORT || 3001;
+const sqlite3 = require('sqlite3').verbose();
+const { open } = require('sqlite');
+
+async function getDbConnection() {
+  return open({
+    filename: './scoutei.db',
+    driver: sqlite3.Database
+  });
+}
+
+
+
+const initTable = async () => {
+  const db = await getDbConnection();
+  await db.run(`CREATE TABLE IF NOT EXISTS predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER UNIQUE,
+    analise TEXT,
+    palpite TEXT,
+    tendencia_oculta TEXT,
+    entrada_pro TEXT,
+    comportamento_suspeito TEXT,
+    statistics_home TEXT,
+    statistics_away TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) {
+      return console.error('Erro ao criar tabela:', err.message);
+    }
+    console.log('✅ Tabela predictions pronta.');
+  });
+
+  await db.run(`CREATE TABLE IF NOT EXISTS fixtures (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fixtures TEXT,
+    date DATE DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) {
+      return console.error('Erro ao criar tabela:', err.message);
+    }
+    console.log('✅ Tabela fixtures pronta.');
+  });
+
+  db.close();
+}
+
+initTable();  
+
+
 
 // Middleware
 app.use(express.json());
@@ -11,13 +60,27 @@ app.use(express.static('public'));
 // 🔹 Fixtures (jogos do dia)
 app.get('/api/fixtures', async (req, res) => {
   const { date } = req.query;
+  
   if (!date) return res.status(400).json({ error: 'Parâmetro "date" é obrigatório.' });
+  const db = await getDbConnection();
+  const dbResponse = await db.get(`select fixtures from fixtures where date = '${date}'`);
 
+  if (dbResponse?.fixtures) {
+    console.log(`banco`);
+    res.json(JSON.parse(dbResponse?.fixtures));
+    return;
+  }
+
+  console.log(`nao tem no banco fix`);
   try {
-    const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}`, {
+    const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}&timezone=America/Sao_Paulo`, {
       headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
     });
+
     const data = await response.json();
+
+    await db.run(`INSERT INTO fixtures (fixtures, date) VALUES (?, ?)`, [JSON.stringify(data), date]);
+
     res.json(data);
   } catch (err) {
     console.error('❌ Erro na rota /api/fixtures:', err);
@@ -27,10 +90,22 @@ app.get('/api/fixtures', async (req, res) => {
 
 // 🔹 Estatísticas de um time
 app.get('/api/statistics', async (req, res) => {
-  const { team, season, league } = req.query;
+  const { team, season, league, id_fixture, teamName } = req.query;
   if (!team || !season || !league) {
     return res.status(400).json({ error: 'Parâmetros "team", "season" e "league" são obrigatórios.' });
   }
+
+  const db = await getDbConnection();
+
+  const dbResponse = await db.get(`SELECT statistics_${teamName} from predictions where match_id = ${id_fixture}`);
+
+  if (dbResponse && dbResponse[`statistics_${teamName}`]) {
+    console.log(`bank`)
+    res.json(JSON.parse(dbResponse[`statistics_${teamName}`]));
+    return;
+  }
+
+  console.log(`nao tem stat banco`);
 
   try {
     const url = `https://v3.football.api-sports.io/teams/statistics?team=${team}&season=${season}&league=${league}`;
@@ -38,6 +113,13 @@ app.get('/api/statistics', async (req, res) => {
       headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
     });
     const data = await response.json();
+
+    await db.run(`
+      insert into predictions (match_id, statistics_${teamName}, created_at) 
+      VALUES(${id_fixture}, ?, CURRENT_TIMESTAMP) ON CONFLICT(match_id) 
+      DO UPDATE SET statistics_${teamName} = ?`, [JSON.stringify(data), JSON.stringify(data)]);
+    db.close();
+
     res.json(data);
   } catch (err) {
     console.error('❌ Erro na rota /api/statistics:', err);
@@ -70,7 +152,18 @@ app.get('/api/odds/:fixtureId', async (req, res) => {
 
 // 🔹 Chat com OpenAI
 app.post('/api/chat', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, id_fixture, type } = req.body;
+  const db = await getDbConnection();
+
+  const dbResponse = await db.get(`select ${type} from predictions where match_id = ${id_fixture} AND ${type} IS NOT NULL`);
+  if (dbResponse) {
+    res.json({ia_prediction: dbResponse[type]});
+    return;
+  }
+
+  console.log(`nao tinha nada no bancao`);
+  
+
   if (!prompt) return res.status(400).json({ error: 'O campo "prompt" é obrigatório.' });
 
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -94,12 +187,25 @@ app.post('/api/chat', async (req, res) => {
 
     const data = await openaiRes.json();
 
+    const analisysResponse = data.choices[0].message?.content;
+    
+    if (analisysResponse) {
+
+      console.log(type, analisysResponse);
+
+      db.run(`
+        insert into predictions (match_id, ${type}, created_at) 
+        VALUES(${id_fixture}, ?, CURRENT_TIMESTAMP) ON CONFLICT(match_id) 
+        DO UPDATE SET ${type} = ?`, [analisysResponse, analisysResponse]);
+      db.close();
+    }
+
     if (!data || !data.choices || !data.choices[0]) {
       console.warn('⚠️ Resposta incompleta da OpenAI:', data);
       return res.status(502).json({ error: 'Resposta incompleta da IA.' });
     }
 
-    res.json(data);
+    res.json({ia_prediction: analisysResponse});
   } catch (err) {
     console.error('❌ Erro na rota /api/chat:', err);
     res.status(500).json({ error: 'Erro ao gerar resposta da IA.' });
@@ -193,6 +299,18 @@ app.get('/api/insider/:fixtureId', async (req, res) => {
   const fixtureId = req.params.fixtureId;
   console.log('🚨 Iniciando análise COMPORTAMENTO SUSPEITO para fixtureId:', fixtureId);
 
+  const db = await getDbConnection();
+
+  const dbResponse = await db.get(`select comportamento_suspeito from predictions where match_id = ${fixtureId}`);
+  console.log(dbResponse);
+  if (dbResponse?.comportamento_suspeito) {
+    const jsonObject = JSON.parse(dbResponse.comportamento_suspeito);
+    res.json(jsonObject);
+    return;
+  }
+
+  console.log(`nada do bancaooo suspeito`);
+
   try {
     // 1. Odds da partida
     const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?fixture=${fixtureId}`, {
@@ -280,12 +398,22 @@ app.get('/api/insider/:fixtureId', async (req, res) => {
         : '✅ Este jogo não apresenta comportamento suspeito.';
 
     console.log('✅ Modo Comportamento Suspeito finalizado com sucesso');
-    res.json({
+
+    const analiseComportamentoSuspeito = {
       alertaOdds,
       padraoGols,
       ligaSuspeita,
       mensagemFinal
-    });
+    };
+
+    db.run(`insert into predictions (match_id, comportamento_suspeito, created_at)
+      VALUES (${fixtureId}, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT (match_id) DO UPDATE SET comportamento_suspeito = ?`, [
+        JSON.stringify(analiseComportamentoSuspeito), 
+        JSON.stringify(analiseComportamentoSuspeito)
+    ]);
+
+    res.json(analiseComportamentoSuspeito);
 
   } catch (err) {
     console.error('❌ ERRO REAL NO MODO COMPORTAMENTO SUSPEITO:', err.message);
@@ -293,31 +421,43 @@ app.get('/api/insider/:fixtureId', async (req, res) => {
   }
 });
 
+app.get(`/api/reset-fixtures`, async (req, res) => {
+  const db = await getDbConnection()
+
+  await db.run(`delete from fixtures`);
+
+  res.send()
+})
+
+
+require('dotenv').config();
 
 
 
+// Aqui você NÃO cria o app de novo, só importa o que já existe:
+const http = require('http');
+const { Server } = require('socket.io');
 
+// 👉 Supondo que o seu 'app' já foi criado acima!
+const server = http.createServer(app);        // Usa o MESMO app já criado!
+const io = new Server(server, { cors: { origin: "*" } });
 
+// Configuração do Socket.io
+io.on('connection', (socket) => {
+  console.log('🟢 Socket conectado com ID:', socket.id);
 
+  socket.on('sendMessage', (msg) => {
+    console.log('📨 Mensagem recebida no servidor:', msg);
+    io.emit('receiveMessage', msg);           // Repassa para todos os clientes!
+  });
 
+  socket.on('disconnect', () => {
+    console.log('🔴 Usuário desconectado:', socket.id);
+  });
+});
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 🔸 Inicia o servidor
-app.listen(port, () => {
-  console.log(`✅ Servidor rodando em http://localhost:${port}`);
+// 🚀 Aqui você finaliza com o mesmo server, sem conflito:
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });

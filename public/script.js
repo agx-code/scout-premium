@@ -33,8 +33,8 @@ async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) 
 
   try {
     const [homeRes, awayRes, homeEventsRes, awayEventsRes] = await Promise.all([
-      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
-      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}&id_fixture=${id}&teamName=home`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}&id_fixture=${id}&teamName=away`),
       fetch(`/api/events?team=${homeId}&season=${season}&league=${leagueId}`),
       fetch(`/api/events?team=${awayId}&season=${season}&league=${leagueId}`)
     ]);
@@ -132,8 +132,8 @@ async function analisarComIA(time1, time2, campeonato, dataFormatada, id, homeId
 
   try {
     const [homeRes, awayRes] = await Promise.all([
-      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
-      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}&teamName=home&id_fixture=${id}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}&teamName=away&id_fixture=${id}`)
     ]);
 
     const [homeData, awayData] = await Promise.all([homeRes.json(), awayRes.json()]);
@@ -187,11 +187,12 @@ Feche como um trader: diga onde há distorção, se o mercado está bem ajustado
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt, id_fixture: id, type: `analise` })
     });
 
     const data = await response.json();
-    const texto = data?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+    console.log(data);
+    const texto = data?.ia_prediction || '❌ A IA não retornou resposta.';
     container.innerHTML = `<p style="margin-top: 10px;">${texto.replace(/\n/g, '<br>')}</p>`;
   } catch (error) {
     console.error('❌ Erro ao gerar análise com IA:', error);
@@ -214,8 +215,8 @@ async function gerarPalpiteIA(time1, time2, id, homeId, awayId, leagueId, season
 
   try {
     const [homeRes, awayRes] = await Promise.all([
-      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
-      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}&teamName=home&id_fixture=${id}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}&teamName=away&id_fixture=${id}`)
     ]);
 
     const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
@@ -235,11 +236,11 @@ Você é um analista de risco em apostas esportivas. Com base nas estatísticas 
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt, type: `palpite`, id_fixture: id  })
     });
 
     const data = await res.json();
-    const texto = data?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+    const texto = data.ia_prediction || '❌ A IA não retornou resposta.';
     container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
   } catch (err) {
     console.error('❌ Erro ao gerar palpite IA:', err);
@@ -260,8 +261,8 @@ async function verMapaProbabilidades(fixtureId, homeId, awayId, leagueId, season
 
   try {
     const [homeRes, awayRes] = await Promise.all([
-      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
-      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}&teamName=home&id_fixture=${fixtureId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}&teamName=away&id_fixture=${fixtureId}`)
     ]);
 
     const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
@@ -329,7 +330,7 @@ async function verMapaProbabilidades(fixtureId, homeId, awayId, leagueId, season
 
 
 
-async function verTendenciaOculta(fixtureId, matchName, homeId, awayId, leagueId, season) {
+async function verTendenciaOculta(fixtureId, matchName, homeId, awayId, leagueId, season, id) {
   const container = document.getElementById(`tendencia-${fixtureId}`);
   if (container.innerHTML.trim() !== '') {
     container.innerHTML = '';
@@ -341,8 +342,8 @@ async function verTendenciaOculta(fixtureId, matchName, homeId, awayId, leagueId
   try {
     // Buscar estatísticas reais dos times
     const [homeRes, awayRes] = await Promise.all([
-      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
-      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`)
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}&teamName=home&id_fixture=${fixtureId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}&teamName=away&id_fixture=${fixtureId}`)
     ]);
     const [homeStats, awayStats] = await Promise.all([homeRes.json(), awayRes.json()]);
     const h = homeStats.response;
@@ -370,6 +371,7 @@ async function verTendenciaOculta(fixtureId, matchName, homeId, awayId, leagueId
 
     // 🔒 Validação: se nenhuma odd estiver disponível, não continua
     if (isNaN(oddOver25) && isNaN(oddUnder25) && isNaN(oddOver15) && isNaN(oddUnder15)) {
+      fetch(`/api/reset-fixtures`)
       container.innerHTML = '⚠️ Odds de Over/Under não disponíveis para esta partida.';
       return;
     }
@@ -394,11 +396,11 @@ Responda como um analista de precificação. Identifique possíveis distorções
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt, type: `tendencia_oculta`, id_fixture: fixtureId   })
     });
 
     const data = await res.json();
-    const texto = data?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+    const texto = data.ia_prediction || '❌ A IA não retornou resposta.';
     container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
 
   } catch (error) {
@@ -452,11 +454,11 @@ Escreva de forma profissional, direta, sem floreios. A sugestão deve parecer de
     const aiRes = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ prompt,  id_fixture: fixtureId, type: `entrada_pro`})
     });
 
     const aiData = await aiRes.json();
-    const texto = aiData?.choices?.[0]?.message?.content || '❌ A IA não retornou resposta.';
+    const texto = aiData.ia_prediction || '❌ A IA não retornou resposta.';
 
     container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
   } catch (err) {
@@ -483,8 +485,8 @@ async function detectarEdge(fixtureId, homeId, awayId, leagueId, season, matchNa
 
   try {
     const [homeRes, awayRes, oddsRes] = await Promise.all([
-      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}`),
-      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}`),
+      fetch(`/api/statistics?team=${homeId}&season=${season}&league=${leagueId}&teamName=home&id_fixture=${fixtureId}`),
+      fetch(`/api/statistics?team=${awayId}&season=${season}&league=${leagueId}&teamName=away&id_fixture=${fixtureId}`),
       fetch(`/api/odds/${fixtureId}`)
     ]);
 
@@ -615,11 +617,13 @@ async function carregarJogos() {
   
   
   let todosJogos = [];
+  console.log(datasBusca)
 
   for (let data of datasBusca) {
     const response = await fetch(`/api/fixtures?date=${data}`);
     const json = await response.json();
     todosJogos = todosJogos.concat(json.response);
+    console.log(todosJogos);
   }
 
   const agora = new Date();
@@ -869,7 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.verMapaProbabilidades = verMapaProbabilidades;
   window.verTendenciaOculta = verTendenciaOculta;
   window.analisarEntradaProfissional = analisarEntradaProfissional;
-  window.detectarArmadilha = detectarArmadilha;
+  //window.detectarArmadilha = detectarArmadilha;
   window.detectarEdge = detectarEdge;
   window.verModoInsider = verModoInsider;
 });
