@@ -448,13 +448,16 @@ io.on('connection', (socket) => {
 
   socket.on('sendMessage', (msg) => {
     console.log('📨 Mensagem recebida no servidor:', msg);
-    io.emit('receiveMessage', msg);           // Repassa para todos os clientes!
+    // <<< aqui
+    socket.broadcast.emit('receiveMessage', msg);
   });
 
   socket.on('disconnect', () => {
     console.log('🔴 Usuário desconectado:', socket.id);
   });
 });
+
+
 
 // 🚀 Aqui você finaliza com o mesmo server, sem conflito:
 const PORT = process.env.PORT || 3000;

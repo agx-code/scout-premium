@@ -1,5 +1,7 @@
-/* Reset básico */
-* {
+/* =============================
+   Reset Básico e Tipografia
+   ============================= */
+   * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -8,25 +10,38 @@
   body {
     font-family: 'Inter', sans-serif;
     background-color: #f4f7f9;
-    padding: 20px;
     color: #1f2937;
+    line-height: 1.6;
+    padding: 20px;
   }
   
-  /* Título principal */
-  header h1 {
-    text-align: center;
+  a {
     color: #3b82f6;
-    font-size: 2rem;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* =============================
+     Layout Principal
+     ============================= */
+  header {
+    text-align: center;
     margin-bottom: 30px;
   }
   
-  /* Container dos jogos */
-  #jogos-container {
-    max-width: 800px;
-    margin: auto;
+  header h1 {
+    font-size: 2rem;
+    color: #3b82f6;
   }
   
-  /* Card do jogo */
+  #jogos-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
   .jogo {
     background: #ffffff;
     padding: 20px;
@@ -35,48 +50,72 @@
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
   }
   
-  /* Título e horário */
   .jogo h3 {
-    margin: 0 0 6px;
     font-size: 1.25rem;
     color: #111827;
+    margin-bottom: 8px;
   }
   
   .jogo p {
-    margin: 0 0 10px;
     font-size: 0.95rem;
     color: #6b7280;
+    margin-bottom: 12px;
   }
   
-  /* Botões principais */
+  /* =============================
+     Botões Gerais
+     ============================= */
   button {
-    margin-top: 10px;
-    padding: 10px 16px;
-    border: none;
-    background: #3b82f6;
-    color: white;
-    font-weight: 600;
-    border-radius: 8px;
-    font-size: 15px;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
-    cursor: pointer;
-    transition: all 0.25s ease-in-out;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: #3b82f6;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+    transition: background-color 0.25s ease, transform 0.2s ease;
   }
   
   button:hover {
-    background: #2563eb;
-    transform: scale(1.03);
+    background-color: #2563eb;
+    transform: translateY(-2px);
   }
   
-  #jogos-container button {
-    margin-right: 8px;
-    margin-bottom: 10px;
+  button.selecionado {
+    background-color: #facc15;
+    color: #1f2937;
   }
   
-  /* Seções de IA e estatísticas */
+  /* =============================
+     Paginação
+     ============================= */
+  #paginacao {
+    text-align: center;
+    margin-top: 30px;
+  }
+  
+  #paginacao button {
+    margin: 0 4px;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    background: #e0f2fe;
+    color: #1e3a8a;
+  }
+  #paginacao button.ativo {
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    font-weight: bold;
+  }
+  
+  /* =============================
+     Seções de IA e Estatísticas
+     ============================= */
   .analise-ia,
   .estatistica-time {
     background: #eff6ff;
@@ -84,30 +123,24 @@
     border-left: 4px solid #3b82f6;
     border-radius: 10px;
     margin-top: 12px;
-    font-size: 0.95rem;
-    line-height: 1.6;
     white-space: pre-wrap;
   }
   
-  /* Título da estatística */
   .estatistica-time h4 {
-    margin-top: 0;
+    margin-bottom: 10px;
     text-align: center;
     color: #1d4ed8;
     font-size: 1.1rem;
-    margin-bottom: 10px;
   }
   
-  /* Grid das estatísticas */
   .estat-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px 15px;
   }
   
-  /* Item de estatística */
   .estat-item {
-    background: #ffffff;
+    background: #fff;
     padding: 8px 12px;
     border-radius: 8px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
@@ -126,76 +159,145 @@
     color: #3b82f6;
   }
   
-  /* Paginação */
-  #paginacao {
-    text-align: center;
-    margin-top: 30px;
-  }
-  
-  #paginacao button {
-    margin: 0 4px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    background: #e0f2fe;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #1e3a8a;
-  }
-  
-  #paginacao button.ativo {
-    background: #3b82f6;
-    color: white;
-    font-weight: bold;
-    border: none;
-  }
-
+  /* =============================
+     Loading Spinner
+     ============================= */
   .spinner {
-    border: 6px solid #e0e7ff;
-    border-top: 6px solid #2563eb;
-    border-radius: 50%;
     width: 50px;
     height: 50px;
+    border: 6px solid #e0e7ff;
+    border-top-color: #2563eb;
+    border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  #conteudo-principal {
-    display: none;
+    to { transform: rotate(360deg); }
   }
   
 
-  button {
-    background-color: #2563eb !important;
-    color: #fff !important;
-    padding: 10px 14px !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-size: 0.9rem !important;
-    cursor: pointer !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05) !important;
-    transition: background 0.3s, transform 0.2s !important;
+
+
+  /* ============== Chat Styles ============== */
+  .chat-toggle {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg,#2563eb,#3b82f6);
+    color: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    transition: transform .2s, box-shadow .2s;
+    z-index: 1100;
   }
-  
-  button i {
-    color: white !important;
+  .chat-toggle:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .chat-widget {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.95);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+    z-index: 2000;
+  }
+  .chat-widget.active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
   }
 
-  button.selecionado {
-    background-color: #facc15 !important; /* amarelo */
-    color: #1f2937 !important; /* texto escuro para contraste */
+  .chat-widget__header {
+    background: #2563eb;
+    color: #fff;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
   }
-  
-  button.selecionado i {
-    color: #1f2937 !important; /* ícone escuro também */
-  }
-  
-  
-  
+  /* Body ocupa tudo, com scroll para mensagens */
+.chat-widget__body {
+  flex: 1;
+  padding: 16px;
+  background: #f9fafb;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Footer fixo na parte de baixo */
+.chat-widget__footer {
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  display: flex;
+  gap: 10px;
+  background: #fff;
+}
+
+/* Input e botão de enviar */
+.chat-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 24px;
+  outline: none;
+}
+
+.chat-send {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.chat-send:hover {
+  background: #1e40af;
+}
+
+/* Mensagens */
+.message-bubble {
+  padding: 10px 14px 24px;
+  border-radius: 14px;
+  max-width: 75%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  position: relative;
+  word-wrap: break-word;
+}
+
+.message-meta {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  font-size: 0.65rem;
+  color: #666;
+}
+
+.my-message {
+  background: #2563eb;
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.other-message {
+  background: #f3f4f6;
+  color: #111827;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
