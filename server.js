@@ -61,9 +61,9 @@ initTable();
 app.use(express.json());
 app.use(express.static('public'));
 
-// 🔹 Fixtures (jogos do dia)
 
-// 🔹 Fixtures (jogos do dia) com verificação de logos
+
+// 🔹 Fixtures (jogos do dia) com fallback seguro
 app.get('/api/fixtures', async (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ error: 'Parâmetro "date" é obrigatório.' });
@@ -71,60 +71,54 @@ app.get('/api/fixtures', async (req, res) => {
   const db = await getDbConnection();
   let dbResponse = await db.get(`SELECT fixtures FROM fixtures WHERE date = ?`, [date]);
 
-  let data;
-
-  const precisaAtualizarLogos = (fixtures) => {
-    if (!fixtures || !fixtures.response) return true;
-    return fixtures.response.some(jogo => 
-      !jogo.teams?.home?.logo || !jogo.teams?.away?.logo
-    );
-  };
+  // valida se temos um objeto { response: Array } correto
+  const isValid = obj =>
+    obj &&
+    Array.isArray(obj.response) &&
+    obj.response.every(j => j.fixture && j.teams);
 
   if (dbResponse?.fixtures) {
-    const cachedFixtures = JSON.parse(dbResponse.fixtures);
-
-    // Se logos estão OK, retorna sem tentar atualizar
-    if (!precisaAtualizarLogos(cachedFixtures)) {
-      console.log(`✅ Fixtures carregados do banco (com logos válidas).`);
-      res.json(cachedFixtures);
+    const cached = JSON.parse(dbResponse.fixtures);
+    if (isValid(cached)) {
+      console.log('✅ Usando cache de fixtures (válido)');
       db.close();
-      return;
+      return res.json(cached);
     }
-    console.log(`⚠️ Algumas logos faltando, tentando atualizar...`);
+    console.log('⚠️ Cache inválido ou incompleto, buscando na API…');
   } else {
-    console.log(`🚫 Fixtures não encontrados no banco. Buscando da API...`);
+    console.log('🚫 Fixtures não encontrados no banco. Buscando da API…');
   }
 
   try {
-    const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}&timezone=America/Sao_Paulo`, {
-      headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
-    });
-    data = await response.json();
+    const apiRes = await fetch(
+      `https://v3.football.api-sports.io/fixtures?date=${date}&timezone=America/Sao_Paulo`,
+      { headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY } }
+    );
+    const json = await apiRes.json();
 
-    const logosEstaoOk = !precisaAtualizarLogos(data);
-
-    // 🛡️ Só atualiza o banco se as logos estão realmente OK
-    if (logosEstaoOk) {
-      await db.run(`INSERT INTO fixtures (fixtures, date)
-                    VALUES (?, ?)
-                    ON CONFLICT(date) DO UPDATE SET fixtures = ?`, 
-                    [JSON.stringify(data), date, JSON.stringify(data)]);
-      console.log(`🔄 Fixtures atualizados no banco (com logos corretas).`);
-    } else {
-      console.warn(`🚫 API ainda não retornou logos completas. Mantendo cache anterior.`);
-      if (dbResponse?.fixtures) {
-        data = JSON.parse(dbResponse.fixtures); // Usa o cache mesmo faltando algumas logos
-      }
+    if (isValid(json)) {
+      await db.run(
+        `INSERT INTO fixtures (fixtures, date)
+         VALUES (?, ?)
+         ON CONFLICT(date) DO UPDATE SET fixtures = ?`,
+        [JSON.stringify(json), date, JSON.stringify(json)]
+      );
+      console.log('🔄 Fixtures atualizados no banco.');
+      db.close();
+      return res.json(json);
     }
 
-    res.json(data);
+    console.warn('🚫 API devolveu formato inesperado:', json);
   } catch (err) {
-    console.error('❌ Erro ao buscar fixtures:', err);
-    res.status(500).json({ error: 'Erro ao buscar jogos.' });
+    console.error('❌ Erro ao chamar API-FOOTBALL:', err.message);
   } finally {
     db.close();
   }
+
+  // fallback para não travar o front
+  return res.json({ response: [] });
 });
+
 
 
 
