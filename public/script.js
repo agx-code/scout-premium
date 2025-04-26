@@ -861,6 +861,104 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+
+  // 🟢 Pesquisa por nome do time
+document.getElementById('search-bar').addEventListener('input', function (e) {
+  const termo = e.target.value.toLowerCase();
+
+  const jogosFiltrados = jogosTotais.filter(jogo => 
+    jogo.home.toLowerCase().includes(termo) || 
+    jogo.away.toLowerCase().includes(termo)
+  );
+
+  if (termo === '') {
+    renderizarPagina(paginaAtual); // Mostra todos os jogos se o campo estiver vazio
+  } else {
+    renderizarJogosFiltrados(jogosFiltrados);
+  }
+});
+
+function renderizarJogosFiltrados(jogos) {
+  const container = document.getElementById('jogos-container');
+  container.innerHTML = '';
+
+  if (jogos.length === 0) {
+    container.innerHTML = '<p>⚠️ Nenhum jogo encontrado para esse time.</p>';
+    return;
+  }
+
+  jogos.forEach(async item => {
+    const jogo = item.jogoOriginal;
+
+    const id = jogo.fixture?.id;
+    const nomeTimes = `${jogo.teams?.home?.name} x ${jogo.teams?.away?.name}`;
+    const horario = new Date(jogo.fixture?.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dataFormatada = new Date(jogo.fixture?.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+
+    const homeId = parseInt(jogo.teams?.home?.id);
+    const awayId = parseInt(jogo.teams?.away?.id);
+    const leagueId = parseInt(jogo.league?.id);
+    const season = parseInt(jogo.league?.season);
+
+    if (!homeId || !awayId || !leagueId || !season || !id) return;
+
+    const partidaEl = document.createElement('div');
+    partidaEl.classList.add('jogo');
+    const dataDia = new Date(jogo.fixture?.date).toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'America/Sao_Paulo'
+    });
+
+    partidaEl.innerHTML = `
+      <h3>
+        <img src="${jogo.teams.home.logo}" alt="Logo Home" style="height:20px; vertical-align:middle; margin-right:6px;">
+        ${jogo.teams.home.name} x ${jogo.teams.away.name}
+        <img src="${jogo.teams.away.logo}" alt="Logo Away" style="height:20px; vertical-align:middle; margin-left:6px;">
+      </h3>
+      <p>${dataDia.charAt(0).toUpperCase() + dataDia.slice(1)}</p>
+      <p>Horário: ${horario}</p>
+      <div class="botoes" id="botoes-${id}">
+        <button onclick="verEstatisticas(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
+          <i class="fas fa-chart-line"></i> Estatísticas
+        </button>
+        <button onclick="analisarComIA('${jogo.teams.home.name}', '${jogo.teams.away.name}', '${jogo.league.name}', '${dataFormatada}', ${id}, ${homeId}, ${awayId}, ${leagueId}, ${season})">
+          <i class="fas fa-brain"></i> Análise IA
+        </button>
+        <button onclick="gerarPalpiteIA('${jogo.teams.home.name}', '${jogo.teams.away.name}', ${id}, ${homeId}, ${awayId}, ${leagueId}, ${season})">
+          <i class="fas fa-lightbulb"></i> Palpite IA
+        </button>
+        <button onclick="verMapaProbabilidades(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
+          <i class="fas fa-chart-bar"></i> ProbMap
+        </button>
+        <button onclick="verTendenciaOculta(${id}, '${nomeTimes}', ${homeId}, ${awayId}, ${leagueId}, ${season})">
+          <i class="fas fa-eye"></i> Tendência Oculta
+        </button>
+        <button onclick="analisarEntradaProfissional(${id}, '${nomeTimes}', 0, 0)">
+          <i class="fas fa-user-secret"></i> Entrada Pro
+        </button>
+        <button onclick="detectarEdge(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
+          <i class="fas fa-percentage"></i> Detecção de Valor
+        </button>
+        <button onclick="verModoInsider(${id})">
+          <i class="fas fa-user-lock"></i> Comportamento Suspeito
+        </button>
+      </div>
+      <div id="estatisticas-${id}" class="analise-ia"></div>
+      <div id="analise-${id}" class="analise-ia"></div>
+      <div id="palpite-${id}" class="analise-ia"></div>
+      <div id="probmap-${id}" class="analise-ia"></div>
+      <div id="tendencia-${id}" class="analise-ia"></div>
+      <div id="entrada-${id}" class="analise-ia"></div>
+      <div id="edge-${id}" class="analise-ia"></div>
+      <div id="insider-${id}" class="analise-ia"></div>
+    `;
+
+    container.appendChild(partidaEl);
+  });
+}
+
   
   
   

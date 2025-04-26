@@ -62,35 +62,60 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // 🔹 Fixtures (jogos do dia)
+// 🔹 Fixtures (jogos do dia) com verificação de logos
 app.get('/api/fixtures', async (req, res) => {
   const { date } = req.query;
-  
   if (!date) return res.status(400).json({ error: 'Parâmetro "date" é obrigatório.' });
+
   const db = await getDbConnection();
-  const dbResponse = await db.get(`select fixtures from fixtures where date = '${date}'`);
+  let dbResponse = await db.get(`SELECT fixtures FROM fixtures WHERE date = ?`, [date]);
+
+  let data;
+
+  const precisaAtualizarLogos = (fixtures) => {
+    if (!fixtures || !fixtures.response) return true;
+    return fixtures.response.some(jogo => 
+      !jogo.teams?.home?.logo || !jogo.teams?.away?.logo
+    );
+  };
 
   if (dbResponse?.fixtures) {
-    console.log(`banco`);
-    res.json(JSON.parse(dbResponse?.fixtures));
-    return;
+    const cachedFixtures = JSON.parse(dbResponse.fixtures);
+
+    if (!precisaAtualizarLogos(cachedFixtures)) {
+      console.log(`✅ Fixtures carregados do banco (com logos válidas).`);
+      res.json(cachedFixtures);
+      return;
+    } else {
+      console.log(`⚠️ Logos faltando no cache! Revalidando com a API...`);
+    }
+  } else {
+    console.log(`🚫 Fixtures não encontrados no banco. Buscando da API...`);
   }
 
-  console.log(`nao tem no banco fix`);
+  // Busca da API se não houver no banco ou se faltar logos
   try {
     const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}&timezone=America/Sao_Paulo`, {
       headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
     });
+    data = await response.json();
 
-    const data = await response.json();
+    // Atualiza o banco
+    await db.run(`INSERT INTO fixtures (fixtures, date)
+                  VALUES (?, ?)
+                  ON CONFLICT(date) DO UPDATE SET fixtures = ?`, 
+                  [JSON.stringify(data), date, JSON.stringify(data)]);
 
-    await db.run(`INSERT INTO fixtures (fixtures, date) VALUES (?, ?)`, [JSON.stringify(data), date]);
-
+    console.log(`🔄 Fixtures atualizados no banco.`);
     res.json(data);
   } catch (err) {
-    console.error('❌ Erro na rota /api/fixtures:', err);
+    console.error('❌ Erro ao buscar fixtures:', err);
     res.status(500).json({ error: 'Erro ao buscar jogos.' });
+  } finally {
+    db.close();
   }
 });
+
 
 // 🔹 Estatísticas de um time
 app.get('/api/statistics', async (req, res) => {
