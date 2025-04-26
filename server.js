@@ -62,6 +62,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // 🔹 Fixtures (jogos do dia)
+
 // 🔹 Fixtures (jogos do dia) com verificação de logos
 app.get('/api/fixtures', async (req, res) => {
   const { date } = req.query;
@@ -82,31 +83,40 @@ app.get('/api/fixtures', async (req, res) => {
   if (dbResponse?.fixtures) {
     const cachedFixtures = JSON.parse(dbResponse.fixtures);
 
+    // Se logos estão OK, retorna sem tentar atualizar
     if (!precisaAtualizarLogos(cachedFixtures)) {
       console.log(`✅ Fixtures carregados do banco (com logos válidas).`);
       res.json(cachedFixtures);
+      db.close();
       return;
-    } else {
-      console.log(`⚠️ Logos faltando no cache! Revalidando com a API...`);
     }
+    console.log(`⚠️ Algumas logos faltando, tentando atualizar...`);
   } else {
     console.log(`🚫 Fixtures não encontrados no banco. Buscando da API...`);
   }
 
-  // Busca da API se não houver no banco ou se faltar logos
   try {
     const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}&timezone=America/Sao_Paulo`, {
       headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY }
     });
     data = await response.json();
 
-    // Atualiza o banco
-    await db.run(`INSERT INTO fixtures (fixtures, date)
-                  VALUES (?, ?)
-                  ON CONFLICT(date) DO UPDATE SET fixtures = ?`, 
-                  [JSON.stringify(data), date, JSON.stringify(data)]);
+    const logosEstaoOk = !precisaAtualizarLogos(data);
 
-    console.log(`🔄 Fixtures atualizados no banco.`);
+    // 🛡️ Só atualiza o banco se as logos estão realmente OK
+    if (logosEstaoOk) {
+      await db.run(`INSERT INTO fixtures (fixtures, date)
+                    VALUES (?, ?)
+                    ON CONFLICT(date) DO UPDATE SET fixtures = ?`, 
+                    [JSON.stringify(data), date, JSON.stringify(data)]);
+      console.log(`🔄 Fixtures atualizados no banco (com logos corretas).`);
+    } else {
+      console.warn(`🚫 API ainda não retornou logos completas. Mantendo cache anterior.`);
+      if (dbResponse?.fixtures) {
+        data = JSON.parse(dbResponse.fixtures); // Usa o cache mesmo faltando algumas logos
+      }
+    }
+
     res.json(data);
   } catch (err) {
     console.error('❌ Erro ao buscar fixtures:', err);
@@ -115,6 +125,7 @@ app.get('/api/fixtures', async (req, res) => {
     db.close();
   }
 });
+
 
 
 // 🔹 Estatísticas de um time
