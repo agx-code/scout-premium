@@ -27,7 +27,7 @@ app.post('/create-checkout-session', async (req, res) => {
         },
       ],
       success_url: `https://www.scoutei.com/success?fixtureId=${fixtureId}`,
-      cancel_url: `https://www.scoutei.com/cancel`,
+      cancel_url: `https://www.scoutei.com`,
       metadata: { fixtureId: fixtureId }
     });
 
