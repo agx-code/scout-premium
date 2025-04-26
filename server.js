@@ -476,14 +476,6 @@ app.get('/api/insider/:fixtureId', async (req, res) => {
   }
 });
 
-app.get('/api/reset-fixtures', verifyResetKey, async (req, res) => {
-  const db = await getDbConnection();
-  await db.run('DELETE FROM fixtures');
-  await db.close();
-  return res.json({ ok: true, message: 'Cache de fixtures resetado.' });
-});
-
-
 
 // Correto: servir o robots.txt separado
 app.get('/robots.txt', (req, res) => {
