@@ -17,6 +17,27 @@ async function getDbConnection() {
   });
 }
 
+// em cima do arquivo, após carregar dotenv
+const RESET_KEY = process.env.RESET_FIXTURES_KEY;
+
+// middleware simples
+function verifyResetKey(req, res, next) {
+  const key = req.header('X-API-KEY');
+  if (!key || key !== RESET_KEY) {
+    return res.status(403).json({ error: 'Não autorizado.' });
+  }
+  next();
+}
+
+// então, ao invés de app.get('/api/reset-fixtures'...),
+// faça:
+app.get('/api/reset-fixtures', verifyResetKey, async (req, res) => {
+  const db = await getDbConnection();
+  await db.run(`DELETE FROM fixtures`);
+  db.close();
+  res.json({ ok: true });
+});
+
 
 
 const initTable = async () => {
