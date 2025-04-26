@@ -2,9 +2,49 @@ require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
+app.use(express.json());
 const port = process.env.PORT || 3001;
 const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
+
+require('dotenv').config(); // Carrega as variáveis do .env
+
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+
+app.post('/create-checkout-session', async (req, res) => {
+  const { fixtureId } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment', 
+      line_items: [
+        {
+          price: 'price_1RHzDKDC8gX3rCFMcGLtx9lV',  // ✅ Aqui está o seu PRICE_ID correto!
+          quantity: 1,
+        },
+      ],
+      success_url: `https://www.scoutei.com/success?fixtureId=${fixtureId}`,
+      cancel_url: `https://www.scoutei.com/cancel`,
+      metadata: { fixtureId: fixtureId }
+    });
+
+    res.json({ url: session.url });  // Retorna a URL para o frontend redirecionar
+  } catch (error) {
+    console.error('❌ Erro ao criar checkout:', error);
+    res.status(500).json({ error: 'Erro ao criar checkout' });
+  }
+});
+
+
+
+
+
+
+
+
 
 async function getDbConnection() {
   return open({
@@ -430,7 +470,7 @@ app.get(`/api/reset-fixtures`, async (req, res) => {
 })
 
 
-require('dotenv').config();
+
 
 
 

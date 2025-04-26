@@ -726,13 +726,17 @@ function renderizarPagina(pagina, append = false) {
   <div class="botoes" id="botoes-${id}">
     <button onclick="verEstatisticas(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
       <i class="fas fa-chart-line"></i> Estatísticas
-    </button>
-    <button onclick="analisarComIA('${jogo.teams.home.name}', '${jogo.teams.away.name}', '${jogo.league.name}', '${dataFormatada}', ${id}, ${homeId}, ${awayId}, ${leagueId}, ${season})">
-      <i class="fas fa-brain"></i> Análise IA
-    </button>
-    <button onclick="gerarPalpiteIA('${jogo.teams.home.name}', '${jogo.teams.away.name}', ${id}, ${homeId}, ${awayId}, ${leagueId}, ${season})">
-      <i class="fas fa-lightbulb"></i> Palpite IA
-    </button>
+    
+    
+  <button onclick="analisarComIA('${jogo.teams.home.name}', '${jogo.teams.away.name}', '${jogo.league.name}', '${dataFormatada}', ${id}, ${homeId}, ${awayId}, ${leagueId}, ${season})"
+  id="btn-analise-${id}"
+  style="display: none;"  <!-- 🟢 AQUI é o segredo -->
+>
+  <i class="fas fa-brain"></i> Análise IA
+</button>
+
+
+
     <button onclick="verMapaProbabilidades(${id}, ${homeId}, ${awayId}, ${leagueId}, ${season}, '${nomeTimes}')">
       <i class="fas fa-chart-bar"></i> ProbMap
     </button>
@@ -748,6 +752,10 @@ function renderizarPagina(pagina, append = false) {
     <button onclick="verModoInsider(${id}, '${nomeTimes}', ${homeId}, ${awayId}, ${leagueId}, ${season})">
   <i class="fas fa-user-lock"></i> Comportamento Suspeito
 </button>
+<button onclick="comprarAnaliseIA(${id})">
+  <i class="fas fa-lock"></i> Liberar Análise IA (R$ 4,90)
+</button>
+
 
   </div>
   <div id="estatisticas-${id}" class="analise-ia"></div>
@@ -847,6 +855,33 @@ function criarPaginacao() {
   }
 }
 
+
+document.addEventListener('DOMContentLoaded', () => {
+  carregarJogos().then(() => {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('conteudo-principal').style.display = 'block';
+
+    // 🟢 Verifica se voltou do checkout com sucesso
+    const params = new URLSearchParams(window.location.search);
+    const fixtureId = params.get('fixtureId');
+
+    if (window.location.href.includes('success') && fixtureId) {
+      console.log('✅ Pagamento confirmado para fixture:', fixtureId);
+
+      setTimeout(() => {
+        const botaoAnalise = document.getElementById(`btn-analise-${fixtureId}`);
+        if (botaoAnalise) {
+          botaoAnalise.style.display = 'inline-block';  // 👈 Aqui libera o botão!
+          botaoAnalise.click();                        // 👈 Aqui já executa a análise automaticamente!
+        } else {
+          console.warn('⚠️ Botão não encontrado para fixtureId:', fixtureId);
+        }
+      }, 1000); // Dá um tempo para os jogos carregarem
+    }
+  });
+});
+
+
 document.addEventListener('DOMContentLoaded', () => {
   carregarJogos().then(() => {
     document.getElementById('loading-screen').style.display = 'none';  // Esconde o loading
@@ -861,6 +896,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+
+
+
+  window.comprarAnaliseIA = async function(fixtureId) {
+    try {
+      const response = await fetch('/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fixtureId }),
+      });
+      const data = await response.json();
+      window.location.href = data.url; // Redireciona para o checkout Stripe
+    } catch (error) {
+      alert('❌ Erro ao iniciar pagamento!');
+      console.error(error);
+    }
+  };
+  
   
   
   
