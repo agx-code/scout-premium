@@ -29,6 +29,8 @@ function verifyResetKey(req, res, next) {
   next();
 }
 
+
+
 // então, ao invés de app.get('/api/reset-fixtures'...),
 // faça:
 app.get('/api/reset-fixtures', verifyResetKey, async (req, res) => {
@@ -81,6 +83,13 @@ initTable();
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
+
+// logo depois de `app.use(express.static('public'));`
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
+
 
 
 
