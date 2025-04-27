@@ -100,36 +100,24 @@ app.get('/api/fixtures', async (req, res) => {
   if (!date) return res.status(400).json({ error: 'Parâmetro "date" é obrigatório.' });
 
   const db = await getDbConnection();
-  let dbResponse = await db.get(`SELECT fixtures FROM fixtures WHERE date = ?`, [date]);
 
-  // valida se temos um objeto { response: Array } correto
   const isValid = obj =>
-    obj &&
-    Array.isArray(obj.response) &&
-    obj.response.every(j => j.fixture && j.teams);
-
-  if (dbResponse?.fixtures) {
-    const cached = JSON.parse(dbResponse.fixtures);
-    if (isValid(cached)) {
-      console.log('✅ Usando cache de fixtures (válido)');
-      try {
-        if (isValid(cached)) {
-          console.log('✅ Usando cache de fixtures (válido)');
-          return res.json(cached);  // NÃO fecha aqui!
-        }
-        console.log('⚠️ Cache inválido ou incompleto, buscando na API…');
-        // ... resto da lógica
-      } finally {
-        db.close();  // Fecha uma vez só, com segurança!
-      }
-      
-    }
-    console.log('⚠️ Cache inválido ou incompleto, buscando na API…');
-  } else {
-    console.log('🚫 Fixtures não encontrados no banco. Buscando da API…');
-  }
+    obj && Array.isArray(obj.response) && obj.response.every(j => j.fixture && j.teams);
 
   try {
+    const dbResponse = await db.get(`SELECT fixtures FROM fixtures WHERE date = ?`, [date]);
+
+    if (dbResponse?.fixtures) {
+      const cached = JSON.parse(dbResponse.fixtures);
+      if (isValid(cached)) {
+        console.log('✅ Usando cache de fixtures (válido)');
+        return res.json(cached);  // ✅ Aqui ele retorna sem fechar ainda, mas o finally abaixo fecha corretamente!
+      }
+      console.log('⚠️ Cache inválido ou incompleto, buscando na API…');
+    } else {
+      console.log('🚫 Fixtures não encontrados no banco. Buscando da API…');
+    }
+
     const apiRes = await fetch(
       `https://v3.football.api-sports.io/fixtures?date=${date}&timezone=America/Sao_Paulo`,
       { headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY } }
@@ -144,20 +132,20 @@ app.get('/api/fixtures', async (req, res) => {
         [JSON.stringify(json), date, JSON.stringify(json)]
       );
       console.log('🔄 Fixtures atualizados no banco.');
-      db.close();
-      return res.json(json);
+      return res.json(json); // ✅ Aqui também retorna e o finally fecha o db!
     }
 
     console.warn('🚫 API devolveu formato inesperado:', json);
+    return res.json({ response: [] }); // fallback
+
   } catch (err) {
     console.error('❌ Erro ao chamar API-FOOTBALL:', err.message);
+    return res.status(500).json({ error: 'Erro ao buscar fixtures.' });
   } finally {
-    db.close();
+    db.close(); // ✅ Fecha sempre uma vez só
   }
-
-  // fallback para não travar o front
-  return res.json({ response: [] });
 });
+
 
 
 
