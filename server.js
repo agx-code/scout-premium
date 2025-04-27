@@ -112,8 +112,17 @@ app.get('/api/fixtures', async (req, res) => {
     const cached = JSON.parse(dbResponse.fixtures);
     if (isValid(cached)) {
       console.log('✅ Usando cache de fixtures (válido)');
-      db.close();
-      return res.json(cached);
+      try {
+        if (isValid(cached)) {
+          console.log('✅ Usando cache de fixtures (válido)');
+          return res.json(cached);  // NÃO fecha aqui!
+        }
+        console.log('⚠️ Cache inválido ou incompleto, buscando na API…');
+        // ... resto da lógica
+      } finally {
+        db.close();  // Fecha uma vez só, com segurança!
+      }
+      
     }
     console.log('⚠️ Cache inválido ou incompleto, buscando na API…');
   } else {
