@@ -632,7 +632,8 @@ async function carregarJogos() {
   const jogos = todosJogos.filter(jogo => {
     const status = jogo.fixture?.status?.short;
     const horarioJogo = new Date(jogo.fixture?.date);
-    const statusPermitidos = ['NS', '1H', 'HT', '2H', 'ET', 'P'];
+    const statusPermitidos = ['NS', '1H', 'HT', '2H', 'ET', 'P', 'TBD', 'SUSP', 'POSTP']; 
+
     return statusPermitidos.includes(status) && horarioJogo >= duasHorasAtras;
   });
 

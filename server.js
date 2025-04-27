@@ -65,7 +65,8 @@ const initTable = async () => {
   await db.run(`CREATE TABLE IF NOT EXISTS fixtures (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     fixtures TEXT,
-    date DATE DEFAULT CURRENT_TIMESTAMP
+    date DATE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(date) 
   )`, (err) => {
     if (err) {
       return console.error('Erro ao criar tabela:', err.message);
