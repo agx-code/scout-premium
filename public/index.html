@@ -22,6 +22,35 @@
   /></noscript>
   <!-- End Meta Pixel Code -->
 
+
+  <!-- Meta Pixel Code CONVERSÃO -->
+<script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '590166283400478');
+  fbq('track', 'PageView');
+  
+  // ✅ Verifica se a URL contém ?liberado=1
+  if (window.location.href.includes('?liberado=1')) {
+    fbq('track', 'Purchase', {
+      value: 29.90,
+      currency: 'BRL'
+    });
+  }
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=590166283400478&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
+  
+  
+
  
   <!-- (SEO On-Page) -->
   <title>Scoutei – Análises Estatísticas e Probabilidades em Tempo Real para Futebol</title>
