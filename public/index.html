@@ -215,15 +215,11 @@ button.selecionado i {
 <body>
 
 
-
 <!-- Tela de Carregamento -->
 <div id="loading-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
   <h1 style="color: #2563eb; font-family: 'Inter', sans-serif;"><i class="fas fa-bolt"></i> Scoutei</h1>
   <div class="spinner" style="margin-top: 20px; width: 50px; height: 50px; border: 5px solid #cbd5e1; border-top: 5px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite;"></div>
 </div>
-
-
-
 
 
   <div id="conteudo-principal" style="display: none;">
@@ -237,6 +233,121 @@ button.selecionado i {
           style="padding: 10px 15px; border-radius: 8px; border: 1px solid #ccc; width: 300px; font-size: 16px;"
         />
       </div>
+
+
+
+
+
+   <!-- Botão Palpites Secretos (Centralizado) -->
+<!-- Botão Palpites Secretos (Roxo, Fonte Correta, Emoji Branco, Centralizado) -->
+<div style="text-align: center; margin-top: 20px;">
+  <button id="btn-palpites-secretos" style="
+    background: #6f42c1;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  ">
+    <span style="filter: brightness(0) invert(1);">🔮</span> Palpites Secretos
+  </button>
+</div>
+
+
+<!-- Modal Palpites Secretos -->
+<div id="modal-palpites" style="
+  display: none;
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0; 
+  background: rgba(0, 0, 0, 0.7); 
+  z-index: 10000; 
+  align-items: center; 
+  justify-content: center;
+">
+  <div style="
+    background: #fff; 
+    padding: 20px; 
+    max-width: 600px; 
+    width: 90%; 
+    border-radius: 10px; 
+    max-height: 80vh; 
+    overflow-y: auto; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  ">
+    <h2 style="
+      text-align: center; 
+      color: #6f42c1; 
+      margin-bottom: 20px;
+    ">🔮 Palpites Secretos</h2>
+
+    <!-- Conteúdo dos Palpites -->
+    <div id="conteudo-palpites" style="
+      width: 100%;
+      display: flex; 
+      flex-direction: column; 
+      gap: 20px;
+    "></div>
+
+    <!-- Botão Fechar -->
+    <button onclick="fecharModal()" style="
+      margin-top: 20px; 
+      background: #6f42c1; 
+      color: white; 
+      padding: 12px; 
+      font-size: 16px;
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      width: 100%;
+      font-weight: bold;
+    ">
+      Fechar
+    </button>
+  </div>
+</div>
+
+<!-- Script para abrir o Modal -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btn-palpites-secretos');
+    if (btn) {
+      btn.addEventListener('click', function() {
+        const modal = document.getElementById('modal-palpites');
+        modal.style.display = 'flex';
+        carregarPalpitesSecretos();
+      });
+    }
+  });
+
+  function fecharModal() {
+    const modal = document.getElementById('modal-palpites');
+    modal.style.display = 'none';
+  }
+</script>
+
+
+        
+
+
+
+
+
+
+
       
     </header>
 

@@ -23,6 +23,86 @@ const amanha = new Date(hoje);
 amanha.setDate(hoje.getDate() + 1);
 const datasBusca = [hoje, amanha].map(data => data.toISOString().split('T')[0]);
 
+
+
+
+
+// Apenas abre o modal (não carrega nada ainda)
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-palpites-secretos');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      document.getElementById('modal-palpites').style.display = 'flex';
+      carregarPalpitesSecretos();
+    });
+  }
+});
+
+function fecharModal() {
+  document.getElementById('modal-palpites').style.display = 'none';
+}
+
+
+// Função de carregar palpites
+async function carregarPalpitesSecretos() {
+  const sheetId = '1xW9kEtrlATCgTLjmRQxJk7ZEl5BsMxH-aCFGd9K2cpc'; // Seu ID correto
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+  const conteudo = document.getElementById('conteudo-palpites');
+  conteudo.innerHTML = '<p style="text-align:center;">⏳ Carregando palpites...</p>';
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rows = json.table?.rows || [];
+
+    conteudo.innerHTML = '';
+
+    if (rows.length === 0) {
+      conteudo.innerHTML = '<p style="text-align:center; color:gray;">Nenhum palpite disponível.</p>';
+      return;
+    }
+
+    rows.slice(1).forEach(row => {
+      const titulo = row.c[0]?.v?.trim() || '';
+      const imagem = row.c[1]?.v?.trim() || '';
+      const descricao = row.c[2]?.v?.trim() || '';
+    
+      if (!titulo && !imagem && !descricao) return;
+    
+      const card = document.createElement('div');
+      card.style.marginBottom = '20px';
+      card.style.textAlign = 'center';
+    
+      card.innerHTML = `
+  ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width:100%; max-height:220px; object-fit:contain; border-radius:8px; background: #f9f9f9; padding:8px;">` : ''}
+  <h3 style="color:#6f42c1; margin:10px 0 5px;">${titulo}</h3>
+  <p style="font-size: 14px; color: #555; padding: 0 10px;">${descricao}</p>
+  <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+`;
+
+    
+      conteudo.appendChild(card);
+    });
+    
+
+  } catch (error) {
+    console.error('❌ Erro ao carregar palpites secretos:', error);
+    conteudo.innerHTML = '<p style="text-align:center; color:red;">Erro ao carregar palpites secretos.</p>';
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
 async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) {
   const estatContainer = document.getElementById(`estatisticas-${id}`);
   if (estatContainer.innerHTML.trim() !== '') {
