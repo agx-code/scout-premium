@@ -38,9 +38,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+
 function fecharModal() {
   document.getElementById('modal-palpites').style.display = 'none';
 }
+
+// Verifica se a URL tem ?liberado=1 e grava no localStorage
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('liberado') === '1') {
+  localStorage.setItem('acessoPalpitesLiberado', 'true');
+}
+
 
 
 // Função de carregar palpites
@@ -50,6 +59,9 @@ async function carregarPalpitesSecretos() {
 
   const conteudo = document.getElementById('conteudo-palpites');
   conteudo.innerHTML = '<p style="text-align:center;">⏳ Carregando palpites...</p>';
+
+  // 🧠 Verifica se está liberado via localStorage
+  const estaLiberado = localStorage.getItem('liberadoPalpites') === 'true';
 
   try {
     const res = await fetch(url);
@@ -66,9 +78,8 @@ async function carregarPalpitesSecretos() {
 
     let count = 0;
 
-    // Pular cabeçalho (linha 0)
     rows.forEach((row, index) => {
-      if (index === 0) return;
+      if (index === 0) return; // pula cabeçalho
 
       const titulo = row.c[0]?.v?.trim() || '';
       const imagem = row.c[1]?.v?.trim() || '';
@@ -76,7 +87,7 @@ async function carregarPalpitesSecretos() {
 
       if (!titulo && !imagem && !descricao) return;
 
-      const isBloqueado = count >= 1;
+      const isBloqueado = !estaLiberado && count >= 1;
       count++;
 
       const card = document.createElement('div');
@@ -89,18 +100,18 @@ async function carregarPalpitesSecretos() {
       card.style.background = '#f9f9f9';
 
       card.innerHTML = `
-        <div style="padding: 10px; ${isBloqueado ? 'filter: blur(6px);' : ''}">
-          ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width:100%; max-height:220px; object-fit:contain;">` : ''}
-          <h3 style="color:#6f42c1; margin:10px 0 5px;">${titulo}</h3>
+        <div style="${isBloqueado ? 'filter: blur(6px);' : ''} padding: 10px;">
+          ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width: 100%; max-height:220px; object-fit:contain;">` : ''}
+          <h3 style="color: #6f42c1; margin: 10px 0 5px;">${titulo}</h3>
           <p style="font-size: 14px; color: #555; padding: 0 10px;">${descricao}</p>
         </div>
         ${isBloqueado ? `
-          <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.8); display:flex; flex-direction:column; align-items:center; justify-content:center;">
-            <div style="font-size: 40px; color: #6f42c1;">🔒</div>
-            <button onclick="desbloquearPalpites()" style="margin-top:10px; background: #6f42c1; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">
-              Desbloquear Palpite Secreto
-            </button>
-          </div>` : ''}
+        <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="font-size: 40px; color: #6f42c1;">🔒</div>
+          <button onclick="desbloquearPalpites()" style="margin-top:10px; background: #6f42c1; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">
+            Desbloquear Palpites
+          </button>
+        </div>` : ''}
       `;
 
       conteudo.appendChild(card);
@@ -111,6 +122,7 @@ async function carregarPalpitesSecretos() {
     conteudo.innerHTML = '<p style="text-align:center; color:red;">Erro ao carregar palpites secretos.</p>';
   }
 }
+
 
 function desbloquearPalpites() {
   window.location.href = "https://buy.stripe.com/28o7vba3pfFp7PG7st";
