@@ -238,80 +238,66 @@ button.selecionado i {
 
 
 
-   <!-- Botão Palpites Secretos (Centralizado) -->
-<!-- Botão Palpites Secretos (Roxo, Fonte Correta, Emoji Branco, Centralizado) -->
+
+
+  <!-- Botão centralizado -->
 <div style="text-align: center; margin-top: 20px;">
   <button id="btn-palpites-secretos" style="
     background: #6f42c1;
     color: #fff;
-    padding: 10px 20px;
+    padding: 12px 24px;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     cursor: pointer;
-    transition: all 0.3s ease;
+    font-family: Arial, sans-serif;
   ">
-    <span style="filter: brightness(0) invert(1);">🔮</span> Palpites Secretos
+    🔒 Palpites Secretos
   </button>
 </div>
 
-
-<!-- Modal Palpites Secretos -->
+<!-- Modal -->
 <div id="modal-palpites" style="
   display: none;
-  position: fixed; 
-  top: 0; 
-  left: 0; 
-  right: 0; 
-  bottom: 0; 
-  background: rgba(0, 0, 0, 0.7); 
-  z-index: 10000; 
-  align-items: center; 
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  align-items: center;
   justify-content: center;
 ">
   <div style="
-    background: #fff; 
-    padding: 20px; 
-    max-width: 600px; 
-    width: 90%; 
-    border-radius: 10px; 
-    max-height: 80vh; 
-    overflow-y: auto; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    background: #fff;
+    padding: 20px;
+    max-width: 600px;
+    width: 90%;
+    border-radius: 10px;
+    max-height: 80vh;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
   ">
-    <h2 style="
-      text-align: center; 
-      color: #6f42c1; 
-      margin-bottom: 20px;
-    ">🔮 Palpites Secretos</h2>
+    <h2 style="text-align: center; color: #6f42c1;">🔮 Palpites Secretos</h2>
 
-    <!-- Conteúdo dos Palpites -->
     <div id="conteudo-palpites" style="
+      margin-top: 20px;
       width: 100%;
-      display: flex; 
-      flex-direction: column; 
+      display: flex;
+      flex-direction: column;
       gap: 20px;
     "></div>
 
-    <!-- Botão Fechar -->
     <button onclick="fecharModal()" style="
-      margin-top: 20px; 
-      background: #6f42c1; 
-      color: white; 
-      padding: 12px; 
-      font-size: 16px;
-      border: none; 
-      border-radius: 8px; 
-      cursor: pointer; 
+      margin-top: 20px;
+      background: #6f42c1;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
       width: 100%;
       font-weight: bold;
     ">
@@ -320,24 +306,94 @@ button.selecionado i {
   </div>
 </div>
 
-<!-- Script para abrir o Modal -->
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('btn-palpites-secretos');
-    if (btn) {
-      btn.addEventListener('click', function() {
-        const modal = document.getElementById('modal-palpites');
-        modal.style.display = 'flex';
-        carregarPalpitesSecretos();
-      });
-    }
-  });
-
-  function fecharModal() {
-    const modal = document.getElementById('modal-palpites');
-    modal.style.display = 'none';
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-palpites-secretos');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      document.getElementById('modal-palpites').style.display = 'flex';
+      carregarPalpitesSecretos();
+    });
   }
+});
+
+function fecharModal() {
+  document.getElementById('modal-palpites').style.display = 'none';
+}
+
+async function carregarPalpitesSecretos() {
+  const sheetId = '1xW9kEtrlATCgTLjmRQxJk7ZEl5BsMxH-aCFGd9K2cpc';
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+  const conteudo = document.getElementById('conteudo-palpites');
+  conteudo.innerHTML = '<p style="text-align:center;">⏳ Carregando palpites...</p>';
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rows = json.table?.rows || [];
+
+    conteudo.innerHTML = '';
+
+    if (rows.length === 0) {
+      conteudo.innerHTML = '<p style="text-align:center; color:gray;">Nenhum palpite disponível.</p>';
+      return;
+    }
+
+    let count = 0;
+
+    rows.forEach((row, index) => {
+      if (index === 0) return; // pular cabeçalho
+
+      const titulo = row.c[0]?.v?.trim() || '';
+      const imagem = row.c[1]?.v?.trim() || '';
+      const descricao = row.c[2]?.v?.trim() || '';
+
+      if (!titulo && !imagem && !descricao) return;
+
+      const isBloqueado = count >= 1;
+      count++;
+
+      const card = document.createElement('div');
+      card.style.position = 'relative';
+      card.style.marginBottom = '20px';
+      card.style.textAlign = 'center';
+      card.style.borderRadius = '8px';
+      card.style.overflow = 'hidden';
+      card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+      card.style.background = '#f9f9f9';
+
+      card.innerHTML = `
+        <div style="${isBloqueado ? 'filter: blur(6px);' : ''} padding: 10px;">
+          ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width: 100%; max-height:220px; object-fit:contain;">` : ''}
+          <h3 style="color: #6f42c1; margin: 10px 0 5px;">${titulo}</h3>
+          <p style="font-size: 14px; color: #555; padding: 0 10px;">${descricao}</p>
+        </div>
+        ${isBloqueado ? `
+        <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="font-size: 40px; color: #6f42c1;">🔒</div>
+          <button onclick="desbloquearPalpites()" style="margin-top:10px; background: #6f42c1; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">
+            Desbloquear Palpites
+          </button>
+        </div>` : ''}
+      `;
+
+      conteudo.appendChild(card);
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao carregar palpites secretos:', error);
+    conteudo.innerHTML = '<p style="text-align:center; color:red;">Erro ao carregar palpites secretos.</p>';
+  }
+}
+
+function desbloquearPalpites() {
+  window.location.href = "https://buy.stripe.com/28o7vba3pfFp7PG7st";
+}
 </script>
+
+
 
 
         

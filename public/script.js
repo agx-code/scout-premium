@@ -45,7 +45,7 @@ function fecharModal() {
 
 // Função de carregar palpites
 async function carregarPalpitesSecretos() {
-  const sheetId = '1xW9kEtrlATCgTLjmRQxJk7ZEl5BsMxH-aCFGd9K2cpc'; // Seu ID correto
+  const sheetId = '1xW9kEtrlATCgTLjmRQxJk7ZEl5BsMxH-aCFGd9K2cpc';
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
   const conteudo = document.getElementById('conteudo-palpites');
@@ -59,39 +59,63 @@ async function carregarPalpitesSecretos() {
 
     conteudo.innerHTML = '';
 
-    if (rows.length === 0) {
+    if (rows.length <= 1) {
       conteudo.innerHTML = '<p style="text-align:center; color:gray;">Nenhum palpite disponível.</p>';
       return;
     }
 
-    rows.slice(1).forEach(row => {
+    let count = 0;
+
+    // Pular cabeçalho (linha 0)
+    rows.forEach((row, index) => {
+      if (index === 0) return;
+
       const titulo = row.c[0]?.v?.trim() || '';
       const imagem = row.c[1]?.v?.trim() || '';
       const descricao = row.c[2]?.v?.trim() || '';
-    
+
       if (!titulo && !imagem && !descricao) return;
-    
+
+      const isBloqueado = count >= 1;
+      count++;
+
       const card = document.createElement('div');
+      card.style.position = 'relative';
       card.style.marginBottom = '20px';
       card.style.textAlign = 'center';
-    
-      card.innerHTML = `
-  ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width:100%; max-height:220px; object-fit:contain; border-radius:8px; background: #f9f9f9; padding:8px;">` : ''}
-  <h3 style="color:#6f42c1; margin:10px 0 5px;">${titulo}</h3>
-  <p style="font-size: 14px; color: #555; padding: 0 10px;">${descricao}</p>
-  <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-`;
+      card.style.borderRadius = '8px';
+      card.style.overflow = 'hidden';
+      card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+      card.style.background = '#f9f9f9';
 
-    
+      card.innerHTML = `
+        <div style="padding: 10px; ${isBloqueado ? 'filter: blur(6px);' : ''}">
+          ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width:100%; max-height:220px; object-fit:contain;">` : ''}
+          <h3 style="color:#6f42c1; margin:10px 0 5px;">${titulo}</h3>
+          <p style="font-size: 14px; color: #555; padding: 0 10px;">${descricao}</p>
+        </div>
+        ${isBloqueado ? `
+          <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.8); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <div style="font-size: 40px; color: #6f42c1;">🔒</div>
+            <button onclick="desbloquearPalpites()" style="margin-top:10px; background: #6f42c1; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">
+              Desbloquear Palpite Secreto
+            </button>
+          </div>` : ''}
+      `;
+
       conteudo.appendChild(card);
     });
-    
 
   } catch (error) {
     console.error('❌ Erro ao carregar palpites secretos:', error);
     conteudo.innerHTML = '<p style="text-align:center; color:red;">Erro ao carregar palpites secretos.</p>';
   }
 }
+
+function desbloquearPalpites() {
+  window.location.href = "https://buy.stripe.com/28o7vba3pfFp7PG7st";
+}
+
 
 
 
