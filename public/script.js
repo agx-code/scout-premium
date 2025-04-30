@@ -109,7 +109,7 @@ async function carregarPalpitesSecretos() {
         <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center;">
           <div style="font-size: 40px; color: #6f42c1;">🔒</div>
           <button onclick="desbloquearPalpites()" style="margin-top:10px; background: #6f42c1; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">
-            Desbloquear Palpites
+            Desbloquear Palpite Secreto
           </button>
         </div>` : ''}
       `;
