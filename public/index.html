@@ -315,6 +315,9 @@ button.selecionado i {
   ">
     <h2 style="text-align: center; color: #6f42c1;">🔮 Palpites Secretos</h2>
 
+    <div id="status-acesso" style="text-align:center; font-weight:bold; margin: 15px 0;"></div>
+
+
     <div id="conteudo-palpites" style="
       margin-top: 20px;
       width: 100%;
@@ -344,25 +347,39 @@ button.selecionado i {
 
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Verifica se há "?liberado=1" na URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const liberado = urlParams.get('liberado');
-  
-    if (liberado === '1') {
-      localStorage.setItem('liberadoPalpites', 'true');
-      // Limpa o ?liberado=1 da URL sem recarregar
-      window.history.replaceState({}, document.title, window.location.pathname);
+ document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const liberado = urlParams.get('liberado');
+  const hoje = new Date().toISOString().split('T')[0];
+
+  if (liberado === '1') {
+    localStorage.setItem('liberadoPalpitesData', hoje);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  const statusDiv = document.getElementById('status-acesso');
+  const diaLiberado = localStorage.getItem('liberadoPalpitesData');
+  const liberadoHoje = diaLiberado === hoje;
+
+  if (statusDiv) {
+    if (liberadoHoje) {
+      statusDiv.textContent = `✅ Acesso liberado até 23h59 de hoje (${hoje.split('-').reverse().join('/')})`;
+      statusDiv.style.color = '#28a745';
+    } else {
+      statusDiv.textContent = '🔒 Acesso expirado. Faça um novo desbloqueio para ver os palpites secretos de hoje.';
+      statusDiv.style.color = '#dc3545';
     }
-  
-    const btn = document.getElementById('btn-palpites-secretos');
-    if (btn) {
-      btn.addEventListener('click', function() {
-        document.getElementById('modal-palpites').style.display = 'flex';
-        carregarPalpitesSecretos();
-      });
-    }
-  });
+  }
+
+  const btn = document.getElementById('btn-palpites-secretos');
+  if (btn) {
+    btn.addEventListener('click', function () {
+      document.getElementById('modal-palpites').style.display = 'flex';
+      carregarPalpitesSecretos();
+    });
+  }
+});
+
   
   function fecharModal() {
     document.getElementById('modal-palpites').style.display = 'none';
@@ -388,7 +405,9 @@ button.selecionado i {
       }
   
       let count = 0;
-      const liberado = localStorage.getItem('liberadoPalpites') === 'true';
+      const hoje = new Date().toISOString().split('T')[0];
+      const liberado = localStorage.getItem('liberadoPalpitesData') === hoje;
+
   
       rows.forEach((row, index) => {
         if (index === 0) return;

@@ -44,6 +44,24 @@ function fecharModal() {
   document.getElementById('modal-palpites').style.display = 'none';
 }
 
+// Exibe status de liberação (ex: "Acesso até 23h59" ou "Expirado")
+document.addEventListener('DOMContentLoaded', () => {
+  const hoje = new Date().toISOString().split('T')[0];
+  const diaLiberado = localStorage.getItem('liberadoPalpitesData');
+  const statusDiv = document.getElementById('status-acesso');
+
+  if (statusDiv) {
+    if (diaLiberado === hoje) {
+      statusDiv.textContent = `✅ Acesso liberado até 23h59 de hoje (${hoje.split('-').reverse().join('/')})`;
+      statusDiv.style.color = '#28a745';
+    } else {
+      statusDiv.textContent = '🔒 Acesso expirado. Faça um novo desbloqueio para ver os palpites secretos de hoje.';
+      statusDiv.style.color = '#dc3545';
+    }
+  }
+});
+
+
 // Verifica se a URL tem ?liberado=1 e grava no localStorage
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('liberado') === '1') {
@@ -60,8 +78,16 @@ async function carregarPalpitesSecretos() {
   const conteudo = document.getElementById('conteudo-palpites');
   conteudo.innerHTML = '<p style="text-align:center;">⏳ Carregando palpites...</p>';
 
-  // 🧠 Verifica se está liberado via localStorage
-  const estaLiberado = localStorage.getItem('liberadoPalpites') === 'true';
+  // 📆 Define a data de hoje no formato YYYY-MM-DD
+  const hoje = new Date().toISOString().split('T')[0];
+
+  // ✅ Se acessou via URL com ?liberado=1, salva a data de liberação
+  if (window.location.href.includes('liberado=1')) {
+    localStorage.setItem('liberadoPalpitesData', hoje);
+  }
+
+  // 🔍 Verifica se o acesso está liberado para o dia atual
+  const estaLiberado = localStorage.getItem('liberadoPalpitesData') === hoje;
 
   try {
     const res = await fetch(url);
@@ -109,7 +135,7 @@ async function carregarPalpitesSecretos() {
         <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center;">
           <div style="font-size: 40px; color: #6f42c1;">🔒</div>
           <button onclick="desbloquearPalpites()" style="margin-top:10px; background: #6f42c1; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">
-            Desbloquear Palpite Secreto
+            Ver Todos os Palpites Secretos Agora
           </button>
         </div>` : ''}
       `;
@@ -123,10 +149,10 @@ async function carregarPalpitesSecretos() {
   }
 }
 
-
 function desbloquearPalpites() {
   window.location.href = "https://buy.stripe.com/28o7vba3pfFp7PG7st";
 }
+
 
 
 
