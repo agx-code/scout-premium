@@ -48,16 +48,22 @@ function fecharModal() {
 document.addEventListener('DOMContentLoaded', () => {
   const hoje = new Date().toISOString().split('T')[0];
   const diaLiberado = localStorage.getItem('liberadoPalpitesData');
+  const vipTimestamp = localStorage.getItem('vipAccess');
+  const agora = Date.now();
+  const seteDias = 7 * 24 * 60 * 60 * 1000;
+  const aindaTemVip = vipTimestamp && agora - parseInt(vipTimestamp) < seteDias;
   const statusDiv = document.getElementById('status-acesso');
 
   if (statusDiv) {
-    if (diaLiberado === hoje) {
-      statusDiv.textContent = `✅ Acesso liberado até 23h59 de hoje (${hoje.split('-').reverse().join('/')})`;
+    if (diaLiberado === hoje || aindaTemVip) {
+      statusDiv.textContent = aindaTemVip
+        ? `💎 VIP ativo até ${new Date(parseInt(vipTimestamp) + seteDias).toLocaleDateString('pt-BR')}`
+        : `✅ Acesso liberado até 23h59 de hoje (${hoje.split('-').reverse().join('/')})`;
       statusDiv.style.color = '#28a745';
     } else {
-      statusDiv.textContent = '🔒 Acesso expirado. Faça um novo desbloqueio para ver os palpites secretos de hoje.';
+      statusDiv.textContent = '🔒 Faça um desbloqueio agora para ver todos os palpites secretos de hoje.';
       statusDiv.style.color = '#dc3545';
-    }
+    }    
   }
 });
 
@@ -66,6 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('liberado') === '1') {
   localStorage.setItem('acessoPalpitesLiberado', 'true');
+}
+
+if (urlParams.get('vip') === '1') {
+  const agora = new Date();
+  localStorage.setItem('vipAccess', agora.getTime());
 }
 
 
@@ -86,8 +97,18 @@ async function carregarPalpitesSecretos() {
     localStorage.setItem('liberadoPalpitesData', hoje);
   }
 
-  // 🔍 Verifica se o acesso está liberado para o dia atual
-  const estaLiberado = localStorage.getItem('liberadoPalpitesData') === hoje;
+  // 🧠 Verifica se acesso está liberado por compra normal (1 dia) ou VIP (7 dias)
+let estaLiberado = localStorage.getItem('liberadoPalpitesData') === hoje;
+
+const vipTimestamp = localStorage.getItem('vipAccess');
+if (vipTimestamp) {
+  const agora = Date.now();
+  const seteDias = 7 * 24 * 60 * 60 * 1000;
+  if (agora - parseInt(vipTimestamp) < seteDias) {
+    estaLiberado = true;
+  }
+}
+
 
   try {
     const res = await fetch(url);
@@ -134,9 +155,17 @@ async function carregarPalpitesSecretos() {
         ${isBloqueado ? `
         <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center;">
           <div style="font-size: 40px; color: #6f42c1;">🔒</div>
-          <button onclick="desbloquearPalpites()" style="margin-top:10px; background: #6f42c1; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">
-            Ver Todos os Palpites Secretos Agora
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 260px;">
+          <button onclick="desbloquearPalpites()" style="width: 100%; background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+          💎 Ver Palpites Secretos (1 Dia)
           </button>
+
+         <button onclick="desbloquearVip()" style="width: 100%; background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+         💎 Ativar Acesso VIP (7 Dias)
+         </button>
+         </div>
+
+
         </div>` : ''}
       `;
 
@@ -153,15 +182,9 @@ function desbloquearPalpites() {
   window.location.href = "https://buy.stripe.com/28o7vba3pfFp7PG7st";
 }
 
-
-
-
-
-
-
-
-
-
+function desbloquearVip() {
+  window.location.href = "https://buy.stripe.com/28o7vb7VhfFp6LC8wy";
+}
 
 
 
