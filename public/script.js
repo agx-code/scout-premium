@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 2️⃣ Listener do botão “🔒 GPS do Dinheiro”
+  // 2️⃣ Listener do botão “💰 GPS do Dinheiro”
   const btnGPS = document.getElementById('btn-gps-dinheiro');
   if (btnGPS) {
     btnGPS.addEventListener('click', () => {
@@ -265,17 +265,39 @@ async function carregarGPS() {
           <p style="font-size:14px; color:#555; margin:0 0 10px;">${descricao}</p>
         </div>
         ${isBloqueado ? `
-          <div style="position:absolute; inset:0; background:rgba(255,255,255,0.8);
-                      display:flex; flex-direction:column; align-items:center; justify-content:center;">
-            <div style="font-size:40px; color:#10b981;">🔒</div>
-            <button onclick="desbloquearGPS()" style="margin-top:10px;
-                    background:#10b981; color:white; padding:12px 20px;
-                    border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
-              GPS do Dinheiro
-            </button>
-          </div>
-        ` : ''}
-      `;
+          <div style="
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          ">
+            <div style="font-size: 40px; color: #28a745;">🔒</div>
+            <div style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 10px;
+              width: 100%;
+              max-width: 260px;
+            ">
+              <button onclick="desbloquearGPS()" style="
+                width: 100%;
+                background: #28a745;
+                color: white;
+                padding: 12px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: bold;
+              ">
+                💰 GPS do Dinheiro
+              </button>
+      </div>
+    </div>` : ''}
+`;
       
   
       conteudo.appendChild(card);
