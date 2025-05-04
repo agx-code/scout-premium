@@ -279,48 +279,62 @@ button.selecionado i {
       </div>
 
 
-
-
-
+      <style>
+        /* Espaçamento e organização dos botões principais */
+        #top-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 20px;
+        }
+      
+        /* No mobile, empilha e define largura máxima */
+        @media (max-width: 480px) {
+          #top-buttons {
+            flex-direction: column;
+            gap: 16px;
+          }
+          #top-buttons button {
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+          }
+        }
+      </style>
 
 
   <!-- Botão centralizado -->
-<div style="text-align: center; margin-top: 20px;">
-  <button id="btn-palpites-secretos" style="
-    background: #6f42c1;
-    color: #fff;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    cursor: pointer;
-    font-family: Arial, sans-serif;
-  ">
-    🔒 Palpites Secretos
-  </button>
-
-    <!-- Novo Botão GPS do Dinheiro -->
+  <div id="top-buttons">
+    <button id="btn-palpites-secretos" style="
+      background: #6f42c1;
+      color: #fff;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+    ">
+      🔒 Palpites Secretos
+    </button>
     <button id="btn-gps-dinheiro" style="
-    background: #10b981;
-    color: #fff;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    cursor: pointer;
-    font-family: Arial, sans-serif;
-    margin-left: 10px;
-  ">
-    🔒 GPS do Dinheiro
-  </button>
-
-
-
-</div>
+      background: #10b981;
+      color: #fff;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+    ">
+      🔒 GPS do Dinheiro
+    </button>
+  </div>
 
 <!-- Modal -->
 <div id="modal-palpites" style="
