@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const fetch = require('node-fetch');
 const app = express();
 app.use(express.json());
@@ -482,6 +483,13 @@ app.get('/api/insider/:fixtureId', async (req, res) => {
     res.status(500).json({ error: 'Erro interno ao processar comportamento suspeito.' });
   }
 });
+
+
+// Depois de todas as definições de app.use/rotas de API, mas ANTES de app.listen:
+app.get('/gps', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 
 
 // Correto: servir o robots.txt separado

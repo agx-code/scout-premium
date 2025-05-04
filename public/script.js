@@ -1,5 +1,3 @@
-// ✅ Arquivo script.js COMPLETO E CORRIGIDO
-
 // Variáveis principais
 const apiHost = 'https://v3.football.api-sports.io';
 const sportMonksHost = 'https://api.sportmonks.com/v3/football';
@@ -36,13 +34,31 @@ document.addEventListener('DOMContentLoaded', () => {
       carregarPalpitesSecretos();
     });
   }
+
+  // 2️⃣ Listener do botão “🔒 GPS do Dinheiro”
+  const btnGPS = document.getElementById('btn-gps-dinheiro');
+  if (btnGPS) {
+    btnGPS.addEventListener('click', () => {
+      document.getElementById('modal-gps').style.display = 'flex';
+      carregarGPS();
+    });
+  }
 });
+
+
+
 
 
 
 function fecharModal() {
   document.getElementById('modal-palpites').style.display = 'none';
 }
+
+// fecha modal GPS
+function fecharModalGPS() {
+  document.getElementById('modal-gps').style.display = 'none';
+}
+
 
 // Exibe status de liberação (ex: "Acesso até 23h59" ou "Expirado")
 document.addEventListener('DOMContentLoaded', () => {
@@ -185,6 +201,96 @@ function desbloquearPalpites() {
 function desbloquearVip() {
   window.location.href = "https://buy.stripe.com/28o7vb7VhfFp6LC8wy";
 }
+
+
+
+
+// Função para carregar dados do GPS do Dinheiro
+async function carregarGPS() {
+  const sheetId = '1ayOkY3s4MaWotnBTxwfUmyux5RTI4v8UO8cnEYt6Cew';
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+  // Se URL tem ?gps=1, registra liberação para hoje
+  const params = new URLSearchParams(window.location.search);
+  const hoje = new Date().toISOString().split('T')[0];
+  if (params.get('gps') === '1') {
+    localStorage.setItem('gpsLiberadoData', hoje);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  const conteudo = document.getElementById('conteudo-gps');
+  conteudo.innerHTML = '<p style="text-align:center;">⏳ Carregando dados do GPS...</p>';
+
+  // Status de liberação
+  const gpsLiberado = localStorage.getItem('gpsLiberadoData') === hoje;
+  const statusGps = document.getElementById('status-gps');
+  if (gpsLiberado) {
+    statusGps.textContent = `✅ Acesso GPS liberado até 23h59 de hoje (${hoje.split('-').reverse().join('/')})`;
+    statusGps.style.color = '#10b981';
+  } else {
+    statusGps.textContent = '🔒 Faça a compra para acessar o GPS do Dinheiro.';
+    statusGps.style.color = '#dc3545';
+  }
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rows = json.table?.rows || [];
+
+    conteudo.innerHTML = '';
+    if (rows.length <= 1) {
+      conteudo.innerHTML = '<p style="text-align:center; color:gray;">Nenhum dado disponível.</p>';
+      return;
+    }
+
+    rows.forEach((row, i) => {
+      if (i === 0) return;  // cabeçalho
+      const titulo    = row.c[0]?.v?.trim() || '';
+      const imagem    = row.c[1]?.v?.trim() || '';
+      const descricao = row.c[2]?.v?.trim() || '';
+    
+      if (!titulo && !descricao && !imagem) return;
+    
+      const isBloqueado = !gpsLiberado;
+      const card = document.createElement('div');
+      card.style = 'position:relative; margin-bottom:20px; padding:10px; background:#f9f9f9; border-radius:8px;';
+      card.innerHTML = `
+        <div style="${isBloqueado ? 'filter: blur(6px); ' : ''}padding:10px;">
+          <h3 style="color:#10b981; margin:10px 0;">${titulo}</h3>
+          ${imagem.startsWith('http')
+            ? `<img src="${imagem}" alt="${titulo}" style="width:100%; max-height:200px; object-fit:contain; margin-bottom:10px;">`
+            : ``
+          }
+          <p style="font-size:14px; color:#555; margin:0 0 10px;">${descricao}</p>
+        </div>
+        ${isBloqueado ? `
+          <div style="position:absolute; inset:0; background:rgba(255,255,255,0.8);
+                      display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <div style="font-size:40px; color:#10b981;">🔒</div>
+            <button onclick="desbloquearGPS()" style="margin-top:10px;
+                    background:#10b981; color:white; padding:12px 20px;
+                    border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
+              GPS do Dinheiro
+            </button>
+          </div>
+        ` : ''}
+      `;
+      
+  
+      conteudo.appendChild(card);
+    });
+  } catch (error) {
+    console.error('❌ Erro ao carregar GPS:', error);
+    conteudo.innerHTML = '<p style="text-align:center; color:red;">Erro ao carregar GPS do Dinheiro.</p>';
+  }
+}
+
+// redireciona para Stripe
+function desbloquearGPS() {
+  window.location.href = "https://buy.stripe.com/aEUbLr2AXal51ri148";
+}
+
 
 
 
@@ -1141,5 +1247,4 @@ function renderizarJogosFiltrados(jogos) {
   window.detectarEdge = detectarEdge;
   window.verModoInsider = verModoInsider;
 });
-
 

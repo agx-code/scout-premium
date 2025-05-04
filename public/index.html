@@ -300,6 +300,26 @@ button.selecionado i {
   ">
     🔒 Palpites Secretos
   </button>
+
+    <!-- Novo Botão GPS do Dinheiro -->
+    <button id="btn-gps-dinheiro" style="
+    background: #10b981;
+    color: #fff;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+    margin-left: 10px;
+  ">
+    🔒 GPS do Dinheiro
+  </button>
+
+
+
 </div>
 
 <!-- Modal -->
@@ -352,6 +372,62 @@ button.selecionado i {
     </button>
   </div>
 </div>
+
+
+<!-- Modal GPS do Dinheiro -->
+<div id="modal-gps" style="
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+">
+  <div style="
+    background: #fff;
+    padding: 20px;
+    max-width: 600px;
+    width: 90%;
+    border-radius: 10px;
+    max-height: 80vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  ">
+    <h2 style="text-align: center; color: #10b981;">🔮 GPS do Dinheiro</h2>
+
+    <p style="text-align: center; color: #555; margin: 0 0 20px;">
+      Identifique onde as maiores apostas estão sendo feitas e siga o fluxo dos grandes apostadores. Esses dados somente as casas de apostas tem! Agora você tem a chance de ver também.
+    </p>
+
+    <div id="status-gps" style="text-align:center; font-weight:bold; margin: 15px 0;"></div>
+    <div id="conteudo-gps" style="
+      margin-top: 20px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    "></div>
+
+
+    <button onclick="fecharModalGPS()" style="
+      margin-top: 20px;
+      background: #10b981;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+    ">
+      Fechar
+    </button>
+  </div>
+</div>
+
 
 
 
