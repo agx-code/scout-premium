@@ -310,10 +310,8 @@ async function carregarGPS() {
 
 // redireciona para Stripe
 function desbloquearGPS() {
-  window.location.href = "https://buy.stripe.com/aEUbLr2AXal51ri148";
+  window.location.href = "https://buy.stripe.com/28oeXD3F164Pfi8bIN";
 }
-
-
 
 
 async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) {
