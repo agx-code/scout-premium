@@ -2,6 +2,10 @@
 const apiHost = 'https://v3.football.api-sports.io';
 const sportMonksHost = 'https://api.sportmonks.com/v3/football';
 const apiKey = 'SUA_CHAVE_API_FOOTBALL';
+
+const AFFILIATE_URL  = 'https://record.nsxafiliados.com/_cBlEimucX4PUOsjNOfgKeWNd7ZgqdRLk/1/';
+const AFFILIATE_TEXT = 'Clique aqui para apostar com as melhores odds do mercado →';
+
 const cacheOdds = {};
 let jogosTotais = [];
 let paginaAtual = 1;
@@ -20,6 +24,45 @@ const hoje = new Date();
 const amanha = new Date(hoje);
 amanha.setDate(hoje.getDate() + 1);
 const datasBusca = [hoje, amanha].map(data => data.toISOString().split('T')[0]);
+
+
+
+/**
+ * Insere o call-to-action de afiliado no final de um container de IA.
+ */
+function appendAffiliate(container) {
+  container.innerHTML += `
+    <div style="text-align:center; margin-top:12px;">
+      <a
+        href="${AFFILIATE_URL}"
+        target="_blank"
+        rel="noopener noreferrer"
+        style="
+          display: inline-block;
+          background-color: #34d399;      /* verde mais suave */
+          color: #fff;
+          padding: 8px 16px;              /* menor espaçamento */
+          border-radius: 6px;
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 0.85rem;             /* texto menor */
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);  /* sombra discreta */
+          transition: background 0.2s;
+        "
+        onmouseover="this.style.backgroundColor='#2fbf85'"
+        onmouseout="this.style.backgroundColor='#34d399'"
+      >
+        <i class="fas fa-dice" style="margin-right:6px;"></i>${AFFILIATE_TEXT}
+      </a>
+    </div>
+  `;
+}
+
+
+
+
+
+
 
 
 
@@ -400,6 +443,10 @@ async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) 
         <li>🔴 ${time2.team.name} Vermelhos: <strong>${vermelhos2}</strong> <span style="font-size: 12px; color: #888;">(Média por jogo)</span></li>
       </ul>
     `;
+
+    appendAffiliate(estatContainer);
+
+    
   } catch (error) {
     console.error('❌ Erro ao buscar estatísticas:', error);
     estatContainer.innerHTML = '❌ Erro ao carregar estatísticas.';
@@ -485,6 +532,10 @@ Feche como um trader: diga onde há distorção, se o mercado está bem ajustado
     console.log(data);
     const texto = data?.ia_prediction || '❌ A IA não retornou resposta.';
     container.innerHTML = `<p style="margin-top: 10px;">${texto.replace(/\n/g, '<br>')}</p>`;
+
+    appendAffiliate(container);
+
+
   } catch (error) {
     console.error('❌ Erro ao gerar análise com IA:', error);
     container.innerHTML = '<p style="color: red;">❌ Erro ao gerar análise com a IA.</p>';
@@ -533,6 +584,10 @@ Você é um analista de risco em apostas esportivas. Com base nas estatísticas 
     const data = await res.json();
     const texto = data.ia_prediction || '❌ A IA não retornou resposta.';
     container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
+
+    appendAffiliate(container);
+
+
   } catch (err) {
     console.error('❌ Erro ao gerar palpite IA:', err);
     container.innerHTML = '❌ Erro ao gerar palpite IA.';
@@ -610,6 +665,10 @@ async function verMapaProbabilidades(fixtureId, homeId, awayId, leagueId, season
       <p style="font-size: 13px; color: #666;">🔧 Fonte: Estatísticas por minuto. Dados referentes à média da temporada <strong>${season}</strong>.</p>
 
     `;
+
+    appendAffiliate(container);
+
+
   } catch (error) {
     console.error('❌ Erro ao calcular ProbMap:', error);
     container.innerHTML = '❌ Erro ao gerar o mapa de probabilidades.';
@@ -694,6 +753,9 @@ Responda como um analista de precificação. Identifique possíveis distorções
     const texto = data.ia_prediction || '❌ A IA não retornou resposta.';
     container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
 
+    appendAffiliate(container);
+
+
   } catch (error) {
     console.error('❌ Erro ao analisar tendência oculta:', error);
     container.innerHTML = '❌ Erro ao gerar tendência oculta.';
@@ -752,6 +814,10 @@ Escreva de forma profissional, direta, sem floreios. A sugestão deve parecer de
     const texto = aiData.ia_prediction || '❌ A IA não retornou resposta.';
 
     container.innerHTML = `<p>${texto.replace(/\n/g, '<br>')}</p>`;
+
+    appendAffiliate(container);
+
+
   } catch (err) {
     console.error('❌ Erro na IA de Entrada Pro:', err);
     container.innerHTML = '❌ Erro ao gerar sugestão de entrada ao vivo.';
@@ -845,6 +911,10 @@ async function detectarEdge(fixtureId, homeId, awayId, leagueId, season, matchNa
     html += '</ul>';
 
     container.innerHTML = html;
+
+    appendAffiliate(container);
+
+
   } catch (error) {
     console.error('❌ Erro ao detectar valor:', error);
     container.innerHTML = '❌ Erro ao detectar valor estatístico.';
@@ -888,6 +958,10 @@ async function verModoInsider(fixtureId) {
       </ul>
       <p style="margin-top: 10px; font-weight: bold;">${mensagemFinal}</p>
     `;
+
+    appendAffiliate(container);
+
+
   } catch (err) {
     console.error('❌ Erro no modo Insider:', err);
     container.innerHTML = '❌ Erro ao processar modo Insider.';
