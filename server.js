@@ -1,14 +1,140 @@
 require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const fetch = require('node-fetch');
-const app = express();
-app.use(express.json());
+
+const express     = require('express');
+const path        = require('path');
+const fetch       = require('node-fetch');
+const Joi         = require('joi');
+const cors        = require('cors');
+const compression = require('compression');
+const pino        = require('express-pino-logger')();
+const timeout     = require('connect-timeout');        // ← import do timeout
+const rateLimit   = require('express-rate-limit');     // ← import do rate limiter
+
+const app  = express();
 const port = process.env.PORT || 3001;
+
+// Middlewares globais
+app.use(cors({ origin: 'https://www.scoutei.com' }));
+app.use(pino);
+app.use(compression());
+app.use(express.json());
+
+// timeout global de 10s
+app.use(timeout('10s'));
+
+// limitador: max 100 req/min por IP
+app.use(rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
+
+// SQLite setup
 const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
 
-require('dotenv').config(); // Carrega as variáveis do .env
+async function getDbConnection() {
+  return open({
+    filename: './scoutei.db',
+    driver: sqlite3.Database
+  });
+}
+
+// Validação Joi para preferência MP
+const preferenceSchema = Joi.object({
+  type: Joi.string().valid('palpites', 'vip', 'gps').required()
+});
+
+// Rota para criar preferência Mercado Pago
+app.post('/api/mp/preference', async (req, res) => {
+  const { type } = req.body;
+
+  // 1) valida o body
+  const { error } = preferenceSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  // 2) monta o item e a URL de sucesso
+  let item, successBack;
+  switch (type) {
+    case 'palpites':
+      item = { title: 'Palpites Secretos (1 dia)', quantity: 1, unit_price: 4.90 };
+      successBack = 'https://www.scoutei.com/?liberado=1';
+      break;
+    case 'vip':
+      item = { title: 'Acesso VIP (7 dias)', quantity: 1, unit_price: 18.90 };
+      successBack = 'https://www.scoutei.com/?vip=1';
+      break;
+    case 'gps':
+      item = { title: 'GPS do Dinheiro', quantity: 1, unit_price: 97.00 };
+      successBack = 'https://www.scoutei.com/?gps=1';
+      break;
+    default:
+      return res.status(400).json({ error: 'Tipo inválido.' });
+  }
+
+  // 3) monta o payload de preferência
+  const preferencePayload = {
+    site_id: 'MLB',
+    items: [ item ],
+    payment_methods: {
+      excluded_payment_types: [
+        { id: 'ticket' }
+      ]
+    },
+    back_urls: {
+      success: successBack,
+      failure: 'https://www.scoutei.com/?payment=failed',
+      pending: 'https://www.scoutei.com/?payment=pending'
+    },
+    auto_return: 'approved',
+    binary_mode: true          // ← força o redirecionamento imediato
+  };
+  
+
+  try {
+    const baseUrl = process.env.MP_BASE_URL || 'https://api.mercadopago.com';
+    const mpRes = await fetch(`${baseUrl}/checkout/preferences`, {
+      method:  'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(preferencePayload)
+    });
+
+    if (!mpRes.ok) {
+      const errText = await mpRes.text();
+      console.error('MP HTTP Error:', mpRes.status, errText);
+      return res.status(502).json({ error: 'Falha na API Mercado Pago.' });
+    }
+
+    const { id: preference_id, init_point } = await mpRes.json();
+    console.log('MP preference created:', preference_id);
+
+    // ─── grava o pedido localmente ──────────────────────
+    const db = await getDbConnection();
+    await db.run(
+      `INSERT OR IGNORE INTO pedidos (preference_id, type) VALUES (?, ?)`,
+      [preference_id, type]
+    );
+    db.close();
+    // ────────────────────────────────────────────────────
+
+    // 4) retorna ao front init_point + preference_id
+    return res.json({ init_point, preference_id });
+  } catch (err) {
+    console.error('Erro ao criar preferência no MP:', err);
+    return res.status(500).json({ error: 'Não foi possível criar preferência.' });
+  }
+});
+
+
+// … aqui seguem suas outras rotas (/api/fixtures, /api/statistics, /api/odds, /api/chat, etc.)
+
+
 
 
 async function getDbConnection() {
@@ -45,40 +171,68 @@ app.get('/api/reset-fixtures', verifyResetKey, async (req, res) => {
 
 const initTable = async () => {
   const db = await getDbConnection();
-  await db.run(`CREATE TABLE IF NOT EXISTS predictions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    match_id INTEGER UNIQUE,
-    analise TEXT,
-    palpite TEXT,
-    tendencia_oculta TEXT,
-    entrada_pro TEXT,
-    comportamento_suspeito TEXT,
-    statistics_home TEXT,
-    statistics_away TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`, (err) => {
-    if (err) {
-      return console.error('Erro ao criar tabela:', err.message);
-    }
-    console.log('✅ Tabela predictions pronta.');
-  });
 
-  await db.run(`CREATE TABLE IF NOT EXISTS fixtures (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fixtures TEXT,
-    date DATE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(date) 
-  )`, (err) => {
-    if (err) {
-      return console.error('Erro ao criar tabela:', err.message);
+  // Cria tabela de predictions
+  await db.run(
+    `CREATE TABLE IF NOT EXISTS predictions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      match_id INTEGER UNIQUE,
+      analise TEXT,
+      palpite TEXT,
+      tendencia_oculta TEXT,
+      entrada_pro TEXT,
+      comportamento_suspeito TEXT,
+      statistics_home TEXT,
+      statistics_away TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+    (err) => {
+      if (err) {
+        return console.error('Erro ao criar tabela predictions:', err.message);
+      }
+      console.log('✅ Tabela predictions pronta.');
     }
-    console.log('✅ Tabela fixtures pronta.');
-  });
+  );
+
+  // Cria tabela de fixtures
+  await db.run(
+    `CREATE TABLE IF NOT EXISTS fixtures (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fixtures TEXT,
+      date DATE DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(date)
+    )`,
+    (err) => {
+      if (err) {
+        return console.error('Erro ao criar tabela fixtures:', err.message);
+      }
+      console.log('✅ Tabela fixtures pronta.');
+    }
+  );
+
+  // Cria tabela de pedidos (para rastrear cada preference e liberar acesso)
+  await db.run(
+    `CREATE TABLE IF NOT EXISTS pedidos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      preference_id TEXT UNIQUE,
+      type TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      acesso_liberado INTEGER DEFAULT 0
+    )`,
+    (err) => {
+      if (err) {
+        return console.error('Erro ao criar tabela pedidos:', err.message);
+      }
+      console.log('✅ Tabela pedidos pronta.');
+    }
+  );
 
   db.close();
 }
 
-initTable();  
+initTable();
+
+
 
 
 
@@ -504,6 +658,37 @@ Sitemap: https://www.scoutei.com/sitemap.xml
 
 
 
+// 1) Webhook Mercado Pago — receberá o payment.updated
+app.post('/api/webhooks/mercadopago', express.json(), async (req, res) => {
+  const event = req.body;
+  const pago   = event.data?.status === 'approved';
+  const prefId = event.data?.preference_id;
+  if (pago && prefId) {
+    const db = await getDbConnection();
+    await db.run(
+      `UPDATE pedidos SET acesso_liberado = 1 WHERE preference_id = ?`,
+      [ prefId ]
+    );
+    db.close();
+  }
+  // responde rápido ao MP
+  res.sendStatus(200);
+});
+
+// 2) Endpoint de status para o front‑end confirmar liberação
+app.get('/api/pedido-status', async (req, res) => {
+  const { preference_id } = req.query;
+  const db = await getDbConnection();
+  const row = await db.get(
+    `SELECT acesso_liberado FROM pedidos WHERE preference_id = ?`,
+    [ preference_id ]
+  );
+  db.close();
+  res.json({ acesso: !!row?.acesso_liberado });
+});
+
+
+
 
 
 // Aqui você NÃO cria o app de novo, só importa o que já existe:
@@ -528,6 +713,20 @@ io.on('connection', (socket) => {
     console.log('🔴 Usuário desconectado:', socket.id);
   });
 });
+
+
+
+// Graceful shutdown
+const shutdown = () => {
+  console.log('⚠️  Graceful shutdown iniciado...');
+  server.close(() => {
+    console.log('✔️  HTTP server fechado');
+    process.exit(0);
+  });
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
 
 
 
