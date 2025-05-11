@@ -106,10 +106,19 @@ app.post('/api/mp/preference', async (req, res) => {
     });
 
     if (!mpRes.ok) {
-      const errText = await mpRes.text();
-      console.error('MP HTTP Error:', mpRes.status, errText);
-      return res.status(502).json({ error: 'Falha na API Mercado Pago.' });
-    }
+          const errText = await mpRes.text();
+          console.error('⛔ MP HTTP Error:', {
+            status:     mpRes.status,
+            statusText: mpRes.statusText,
+            body:       errText
+          });
+          return res
+           .status(502)
+            .json({ 
+              error:   'Falha na API Mercado Pago.',
+             details: errText 
+            });
+        }
 
     const { id: preference_id, init_point } = await mpRes.json();
     console.log('MP preference created:', preference_id);
