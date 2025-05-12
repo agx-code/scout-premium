@@ -1,15 +1,15 @@
-// Variáveis principais
 const apiHost = 'https://v3.football.api-sports.io';
 const sportMonksHost = 'https://api.sportmonks.com/v3/football';
 const apiKey = 'SUA_CHAVE_API_FOOTBALL';
+
 const AFFILIATE_URL  = 'https://record.nsxafiliados.com/_cBlEimucX4PUOsjNOfgKeWNd7ZgqdRLk/1/';
 const AFFILIATE_TEXT = 'Clique aqui para apostar com as melhores odds do mercado →';
+
 const cacheOdds = {};
 let jogosTotais = [];
 let paginaAtual = 1;
 const jogosPorPagina = 10;
 let carregandoMais = false; // controle de carregamento
-
 
 
 function getDataHojeBrasil() {
@@ -23,52 +23,6 @@ const hoje = new Date();
 const amanha = new Date(hoje);
 amanha.setDate(hoje.getDate() + 1);
 const datasBusca = [hoje, amanha].map(data => data.toISOString().split('T')[0]);
-
-
-// Função genérica
-async function criarCheckout(type) {
-  console.log('🚀 iniciar checkout:', type);
-  try {
-    const resp = await fetch('/api/mp/preference', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type })
-    });
-    console.log('Status da resposta:', resp.status);
-
-    const data = await resp.json();
-    console.log('Corpo da resposta:', data);
-
-    if (!data.init_point) {
-      alert('Erro: init_point não retornado pelo servidor.\nVeja o console para mais detalhes.');
-      return;
-    }
-
-    // redireciona para o checkout Mercado Pago
-    const { init_point, preference_id } = data;
-localStorage.setItem('mp_preference_id', preference_id);
-window.location.href = init_point;
-
-  } catch (err) {
-    console.error('❌ Erro ao chamar /api/mp/preference:', err);
-    alert('Não foi possível iniciar o checkout. Veja o console.');
-  }
-}
-
-
-
-function desbloquearPalpites() {
-  criarCheckout('palpites');
-}
-
-function desbloquearVip() {
-  criarCheckout('vip');
-}
-
-function desbloquearGPS() {
-  criarCheckout('gps');
-}
-
 
 
 
@@ -172,167 +126,124 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// Verifica se a URL tem ?liberado=1 e grava no localStorage
 const urlParams = new URLSearchParams(window.location.search);
-const hojeStr = new Date().toISOString().split('T')[0];
-
-// 1) Tratamento padrão
 if (urlParams.get('liberado') === '1') {
-  const pref = localStorage.getItem('mp_preference_id');
-  const check = async () => {
-    const resp = await fetch(`/api/pedido-status?preference_id=${pref}`);
-    const { acesso } = await resp.json();
-    if (acesso) {
-      localStorage.setItem('liberadoPalpitesData', hojeStr);
-      window.history.replaceState(null, '', window.location.pathname);
-    } else {
-      setTimeout(check, 3000);
-    }
-  };
-  check();
+  localStorage.setItem('acessoPalpitesLiberado', 'true');
 }
 
 if (urlParams.get('vip') === '1') {
-  const pref = localStorage.getItem('mp_preference_id');
-  const checkVip = async () => {
-    const resp = await fetch(`/api/pedido-status?preference_id=${pref}`);
-    const { acesso } = await resp.json();
-    if (acesso) {
-      const agoraTs = Date.now();
-      localStorage.setItem('vipAccess', agoraTs.toString());
-      window.history.replaceState(null, '', window.location.pathname);
-    } else {
-      setTimeout(checkVip, 3000);
-    }
-  };
-  checkVip();
-}
-
-if (urlParams.get('gps') === '1') {
-  const pref = localStorage.getItem('mp_preference_id');
-  const checkGps = async () => {
-    const resp = await fetch(`/api/pedido-status?preference_id=${pref}`);
-    const { acesso } = await resp.json();
-    if (acesso) {
-      // usa hojeStr em vez de hoje
-      localStorage.setItem('gpsLiberadoData', hojeStr);
-      window.history.replaceState(null, '', window.location.pathname);
-    } else {
-      setTimeout(checkGps, 3000);
-    }
-  };
-  checkGps();
+  const agora = new Date();
+  localStorage.setItem('vipAccess', agora.getTime());
 }
 
 
 
-
-
-// 1) Função auxiliar para renderizar as linhas (palpites)
-//
-function renderRows(rows) {
-  const conteudo = document.getElementById('conteudo-palpites');
-  conteudo.innerHTML = '';
-
-  if (rows.length <= 1) {
-    conteudo.innerHTML = '<p style="text-align:center; color:gray;">Nenhum palpite disponível.</p>';
-    return;
-  }
-
-  let count = 0;
-  // Determina se hoje/vip liberou o acesso
-  const hoje = new Date().toISOString().split('T')[0];
-  let estaLiberado = localStorage.getItem('liberadoPalpitesData') === hoje;
-  const vipTimestamp = localStorage.getItem('vipAccess');
-  if (vipTimestamp && Date.now() - parseInt(vipTimestamp) < 7 * 24 * 60 * 60 * 1000) {
-    estaLiberado = true;
-  }
-
-  rows.forEach((row, index) => {
-    if (index === 0) return; // cabeçalho
-
-    const titulo    = row.c[0]?.v?.trim() || '';
-    const imagem    = row.c[1]?.v?.trim() || '';
-    const descricao = row.c[2]?.v?.trim() || '';
-    if (!titulo && !imagem && !descricao) return;
-
-    const isBloqueado = !estaLiberado && count >= 1;
-    count++;
-
-    const card = document.createElement('div');
-    card.style.position     = 'relative';
-    card.style.marginBottom = '20px';
-    card.style.textAlign    = 'center';
-    card.style.borderRadius = '8px';
-    card.style.overflow     = 'hidden';
-    card.style.boxShadow    = '0 2px 8px rgba(0,0,0,0.1)';
-    card.style.background   = '#f9f9f9';
-
-    card.innerHTML = `
-      <div style="${isBloqueado ? 'filter: blur(6px);' : ''} padding: 10px;">
-        ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width: 100%; max-height:220px; object-fit:contain;">` : ''}
-        <h3 style="color: #6f42c1; margin: 10px 0 5px;">${titulo}</h3>
-        <p style="font-size: 14px; color: #555; padding: 0 10px;">${descricao}</p>
-      </div>
-      ${isBloqueado ? `
-      <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center;">
-        <div style="font-size: 40px; color: #6f42c1;">🔒</div>
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 260px;">
-          <button onclick="desbloquearPalpites()" style="width: 100%; background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
-            💎 Ver Palpites Secretos (1 Dia)
-          </button>
-          <button onclick="desbloquearVip()" style="width: 100%; background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
-            💎 Ativar Acesso VIP (7 Dias)
-          </button>
-        </div>
-      </div>` : ''}
-    `;
-    conteudo.appendChild(card);
-  });
-}
-
-//
-// 2) Refatoração de carregarPalpitesSecretos para usar cache + renderRows
-//
+// Função de carregar palpites
 async function carregarPalpitesSecretos() {
-  const cacheKey = 'palpitesCache';
-  const cacheTS  = sessionStorage.getItem(cacheKey + 'TS');
-
-  // Se cache válido (<5min), reutiliza e sai
-  if (cacheTS && Date.now() - parseInt(cacheTS) < 5 * 60 * 1000) {
-    const rows = JSON.parse(sessionStorage.getItem(cacheKey));
-    renderRows(rows);
-    return;
-  }
-
   const sheetId = '1xW9kEtrlATCgTLjmRQxJk7ZEl5BsMxH-aCFGd9K2cpc';
-  const url     = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
   const conteudo = document.getElementById('conteudo-palpites');
   conteudo.innerHTML = '<p style="text-align:center;">⏳ Carregando palpites...</p>';
 
-  // Se veio via ?liberado=1, grava data
+  // 📆 Define a data de hoje no formato YYYY-MM-DD
   const hoje = new Date().toISOString().split('T')[0];
+
+  // ✅ Se acessou via URL com ?liberado=1, salva a data de liberação
   if (window.location.href.includes('liberado=1')) {
     localStorage.setItem('liberadoPalpitesData', hoje);
-    window.history.replaceState(null, '', window.location.pathname);
   }
 
+  // 🧠 Verifica se acesso está liberado por compra normal (1 dia) ou VIP (7 dias)
+let estaLiberado = localStorage.getItem('liberadoPalpitesData') === hoje;
+
+const vipTimestamp = localStorage.getItem('vipAccess');
+if (vipTimestamp) {
+  const agora = Date.now();
+  const seteDias = 7 * 24 * 60 * 60 * 1000;
+  if (agora - parseInt(vipTimestamp) < seteDias) {
+    estaLiberado = true;
+  }
+}
+
+
   try {
-    const res  = await fetch(url);
+    const res = await fetch(url);
     const text = await res.text();
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const rows = json.table?.rows || [];
 
-    // Grava no cache
-    sessionStorage.setItem(cacheKey, JSON.stringify(rows));
-    sessionStorage.setItem(cacheKey + 'TS', Date.now().toString());
+    conteudo.innerHTML = '';
 
-    // Renderiza de verdade
-    renderRows(rows);
+    if (rows.length <= 1) {
+      conteudo.innerHTML = '<p style="text-align:center; color:gray;">Nenhum palpite disponível.</p>';
+      return;
+    }
+
+    let count = 0;
+
+    rows.forEach((row, index) => {
+      if (index === 0) return; // pula cabeçalho
+
+      const titulo = row.c[0]?.v?.trim() || '';
+      const imagem = row.c[1]?.v?.trim() || '';
+      const descricao = row.c[2]?.v?.trim() || '';
+
+      if (!titulo && !imagem && !descricao) return;
+
+      const isBloqueado = !estaLiberado && count >= 1;
+      count++;
+
+      const card = document.createElement('div');
+      card.style.position = 'relative';
+      card.style.marginBottom = '20px';
+      card.style.textAlign = 'center';
+      card.style.borderRadius = '8px';
+      card.style.overflow = 'hidden';
+      card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+      card.style.background = '#f9f9f9';
+
+      card.innerHTML = `
+        <div style="${isBloqueado ? 'filter: blur(6px);' : ''} padding: 10px;">
+          ${imagem ? `<img src="${imagem}" alt="Imagem Palpite" style="width: 100%; max-height:220px; object-fit:contain;">` : ''}
+          <h3 style="color: #6f42c1; margin: 10px 0 5px;">${titulo}</h3>
+          <p style="font-size: 14px; color: #555; padding: 0 10px;">${descricao}</p>
+        </div>
+        ${isBloqueado ? `
+        <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="font-size: 40px; color: #6f42c1;">🔒</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 260px;">
+          <button onclick="desbloquearPalpites()" style="width: 100%; background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+          💎 Ver Palpites Secretos (1 Dia)
+          </button>
+
+         <button onclick="desbloquearVip()" style="width: 100%; background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+         💎 Ativar Acesso VIP (7 Dias)
+         </button>
+         </div>
+
+
+        </div>` : ''}
+      `;
+
+      conteudo.appendChild(card);
+    });
+
   } catch (error) {
     console.error('❌ Erro ao carregar palpites secretos:', error);
     conteudo.innerHTML = '<p style="text-align:center; color:red;">Erro ao carregar palpites secretos.</p>';
   }
 }
+
+function desbloquearPalpites() {
+  window.location.href = "https://lastlink.com/p/C6F51627A/checkout-payment/";
+}
+
+function desbloquearVip() {
+  window.location.href = "https://lastlink.com/p/C081B2997/checkout-payment/";
+}
+
 
 
 // Função para carregar dados do GPS do Dinheiro
@@ -345,10 +256,8 @@ async function carregarGPS() {
   const hoje = new Date().toISOString().split('T')[0];
   if (params.get('gps') === '1') {
     localStorage.setItem('gpsLiberadoData', hoje);
-    // limpa a query-string
-    window.history.replaceState(null, '', window.location.pathname);
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
-  
 
   const conteudo = document.getElementById('conteudo-gps');
   conteudo.innerHTML = '<p style="text-align:center;">⏳ Carregando dados do GPS...</p>';
@@ -440,7 +349,10 @@ async function carregarGPS() {
   }
 }
 
-
+// redireciona para LastLink
+function desbloquearGPS() {
+  window.location.href = "https://lastlink.com/p/CADFDD7AD/checkout-payment/";
+}
 
 
 async function verEstatisticas(id, homeId, awayId, leagueId, season, matchName) {
@@ -1429,4 +1341,3 @@ function renderizarJogosFiltrados(jogos) {
   window.detectarEdge = detectarEdge;
   window.verModoInsider = verModoInsider;
 });
-

@@ -254,6 +254,7 @@ button.selecionado i {
   gtag('config', 'G-GN7CSTWZW4');
 </script>
 
+
 </head>
 <body>
 
@@ -556,6 +557,9 @@ button.selecionado i {
     }
   }
   
+  function desbloquearPalpites() {
+    window.location.href = "https://buy.stripe.com/28o7vba3pfFp7PG7st";
+  }
   </script>
   
   
@@ -710,35 +714,6 @@ button.selecionado i {
     
   <!-- ──────────────────────────────────────────────────────── -->
 </body>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // se já estivermos com ?liberado=1, não faz nada
-    if (window.location.search.includes('liberado=1')) return;
-    const prefId = localStorage.getItem('mp_preference_id');
-    if (!prefId) return;  // sem preference_id, aborta
-
-    async function checkLiberado() {
-      try {
-        const res = await fetch(`/api/pedido-status?preference_id=${prefId}`);
-        const { acesso } = await res.json();
-        if (acesso) {
-          // assim que confirmado, redireciona para liberar login
-          window.location.href = '/?liberado=1';
-        } else {
-          // tenta de novo daqui a 3s
-          setTimeout(checkLiberado, 3000);
-        }
-      } catch (err) {
-        console.error('Erro ao checar status:', err);
-        setTimeout(checkLiberado, 5000);
-      }
-    }
-
-    checkLiberado();
-  });
-</script>
-
 
 
 <!-- Scripts -->
